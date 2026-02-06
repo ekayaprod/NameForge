@@ -453,6 +453,45 @@
   }
 
   // --- Event Handling ---
+  function handleCopyAll() {
+    if (!appState.results.length) { showToast('No results to copy.', true); return; }
+    const text = appState.results.map(r => {
+        if (appState.mode === 'forge') return `${r.name} - ${r.meaning}`;
+        return `${r.name} (${r.valid ? 'Valid' : 'Approx'})`;
+    }).join('\n');
+    navigator.clipboard.writeText(text);
+    showToast('All names copied!');
+  }
+
+  function handleExport() {
+    if (!appState.results.length) { showToast('No results to export.', true); return; }
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appState.results, null, 2));
+    const downloadAnchorNode = document.createElement('a');
+    downloadAnchorNode.setAttribute("href", dataStr);
+    downloadAnchorNode.setAttribute("download", `nameforge_export_${Date.now()}.json`);
+    document.body.appendChild(downloadAnchorNode); // required for firefox
+    downloadAnchorNode.click();
+    downloadAnchorNode.remove();
+  }
+
+  function handleSurpriseMe() {
+    // Random Languages (2 or 3)
+    const numLangs = Math.random() > 0.5 ? 2 : 3;
+    const shuffledLangs = [...LANG_OPTIONS].sort(() => 0.5 - Math.random());
+    appState.selectedLanguages = shuffledLangs.slice(0, numLangs);
+
+    // Random Themes (1 or 2) - only if in Forge mode
+    if (appState.mode === 'forge') {
+        const numThemes = Math.random() > 0.7 ? 2 : 1;
+        const shuffledThemes = [...THEME_OPTIONS].sort(() => 0.5 - Math.random());
+        appState.selectedThemes = shuffledThemes.slice(0, numThemes);
+    }
+
+    showToast('🎲 Randomized selections!');
+    debouncedSaveState();
+    updateControls();
+  }
+
   function handleControlsClick(event) {
     const chip = event.target.closest('.chip[data-option]');
     if (chip) {
@@ -656,6 +695,14 @@
 
     const coreQueryContent = el('div', 'p-3 border-t border-[#0e2334] flex flex-col gap-4');
     const languagesSection = createControlSection('Languages (choose 2-3)', el('div'));
+
+    // Surprise Me Button
+    const surpriseBtn = el('button', 'text-xs bg-[#1f3a52] text-blue-200 px-2 py-0.5 rounded ml-2 hover:bg-[#2b4e6d] transition-colors');
+    surpriseBtn.textContent = '🎲 Surprise Me';
+    surpriseBtn.title = 'Randomly select languages and themes';
+    surpriseBtn.addEventListener('click', (e) => { e.preventDefault(); handleSurpriseMe(); });
+    languagesSection.querySelector('label').append(surpriseBtn);
+
     ui.controls.languageChips = el('div', 'flex flex-wrap gap-2');
     ui.controls.languageChips.dataset.stateKey = 'selectedLanguages';
     const addLangWrap = el('div', 'flex gap-2 mt-2');
@@ -842,7 +889,20 @@
         ui.controls.harmonizerContainer.style.display = isForge ? 'none' : 'flex';
         ui.controls.themesSection.style.display = isForge ? 'block' : 'none';
 
-        ui.results.header.innerHTML = `<div><h2 class="text-lg font-semibold">${isForge ? 'Results' : 'Harmonized Names'}</h2><div class="small-muted">${isForge ? 'Poetic, culturally coined names' : 'Names that work across cultures'}</div></div>`;
+        ui.results.header.className = "flex justify-between items-end";
+        ui.results.header.innerHTML = `
+            <div>
+                <h2 class="text-lg font-semibold">${isForge ? 'Results' : 'Harmonized Names'}</h2>
+                <div class="small-muted">${isForge ? 'Poetic, culturally coined names' : 'Names that work across cultures'}</div>
+            </div>
+            <div class="flex gap-2">
+                 <button id="copy-all-btn" class="chip text-xs" title="Copy all names">Copy All</button>
+                 <button id="export-btn" class="chip text-xs" title="Download JSON">Export</button>
+            </div>
+        `;
+        ui.results.header.querySelector('#copy-all-btn').addEventListener('click', handleCopyAll);
+        ui.results.header.querySelector('#export-btn').addEventListener('click', handleExport);
+
         appState.results = []; updateResultsPanel(); updateControls();
     };
 
