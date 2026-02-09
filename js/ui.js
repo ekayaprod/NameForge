@@ -1,210 +1,56 @@
-(function () {
-  // --- CONFIG ---
-  const API_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/";
-  const APP_VERSION = "9.0"; // Architecture Refactor & Chat Logic
-  const LANG_OPTIONS = ["Turkish","Nordic","Latin","Celtic","Japanese","Greek","Spanish","Irish", "Russian", "Korean", "English"];
-  const THEME_OPTIONS = ["Nature","Cosmic","Balance","Strength","Water","Light","Shadow","Music", "Fire", "Mountain", "Ocean", "Sky", "Forest", "Mythic"];
-  const STYLE_OPTIONS = ["Lyrical & Melodic","Archaic & Mythic","Minimalist & Modern","Heroic & Resonant", "Elegant & Refined", "Grounded & Earthy", "Mystical & Ethereal"];
+import { el, showToast } from './utils.js';
+import { appState, debouncedSaveState } from './state.js';
+import { CONFIG } from './config.js';
+import { geminiService } from './api.js';
 
-  const MODEL_OPTIONS = [
-    { value: "models/gemini-1.5-flash", text: "1.5 Flash (Fast & Balanced)" },
-    { value: "models/gemini-1.5-pro", text: "1.5 Pro (Highest Quality)" },
-    { value: "models/gemini-2.0-flash-exp", text: "2.0 Flash Exp (Experimental)" }
-  ];
+export const ui = {
+    root: document.getElementById('app'),
+    controls: {},
+    results: {},
+    modals: {},
+};
 
-  // --- GEMINI SERVICE ---
-  class GeminiService {
-    constructor() {
-      this.apiKey = "";
-      this.model = "models/gemini-1.5-flash";
-      this.history = []; // Stores { role: 'user'|'model', parts: [{text: ...}] }
-      this.systemInstruction = null;
-      this.lastContextHash = ""; // To detect if we need to reset history
-    }
+let generateHandler = null;
 
-    configure(apiKey, model) {
-      this.apiKey = apiKey;
-      this.model = model;
-    }
+export function setGenerateHandler(handler) {
+    generateHandler = handler;
+}
 
-    resetHistory() {
-      this.history = [];
-      this.lastContextHash = "";
-    }
-
-    /**
-     * Generates content using the chat history.
-     * @param {string} userPrompt - The user's message.
-     * @param {string} systemInstructionText - The static system rules.
-     * @param {string} contextHash - A hash/string representing the current settings (langs, themes).
-     * @param {object} config - Generation config (temp, etc).
-     * @param {AbortSignal} signal - For cancellation.
-     */
-    async generate(userPrompt, systemInstructionText, contextHash, config = {}, signal) {
-      // If the context (settings) changed significantly, we might want to reset history.
-      if (this.lastContextHash && this.lastContextHash !== contextHash) {
-          console.log("Context changed, resetting history.");
-          this.resetHistory();
-      }
-      this.lastContextHash = contextHash;
-
-      // Construct the request body
-      const body = {
-        contents: [...this.history, { role: "user", parts: [{ text: userPrompt }] }],
-        generationConfig: {
-          temperature: config.temperature || 0.8,
-          topP: config.topP || 0.9,
-          maxOutputTokens: config.maxOutputTokens || 1024,
-          responseMimeType: "application/json" // CRITICAL: Enforce JSON to save tokens and ensure validity
-        }
-      };
-
-      // Add System Instruction if supported (v1beta)
-      if (systemInstructionText) {
-        body.systemInstruction = { parts: [{ text: systemInstructionText }] };
-      }
-
-      const response = await fetch(
-        `${API_BASE_URL}${this.model}:generateContent?key=${this.apiKey}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body),
-          signal
-        }
-      );
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        let errorMsg = `API Error ${response.status}`;
-        try {
-            const errJson = JSON.parse(errorText);
-            if (errJson.error?.message) errorMsg = errJson.error.message;
-        } catch(e) {}
-        throw new Error(errorMsg);
-      }
-
-      const data = await response.json();
-
-      // Check for safety blocking
-      if (data.promptFeedback?.blockReason) {
-        throw new Error(`Request blocked: ${data.promptFeedback.blockReason}`);
-      }
-
-      const candidate = data.candidates?.[0];
-      if (!candidate) {
-         throw new Error("No content generated.");
-      }
-
-      if (candidate.finishReason && !['STOP', 'MAX_TOKENS'].includes(candidate.finishReason)) {
-          throw new Error(`Generation stopped: ${candidate.finishReason}`);
-      }
-
-      const responseText = candidate.content?.parts?.[0]?.text || "";
-
-      // Update History
-      this.history.push({ role: "user", parts: [{ text: userPrompt }] });
-      this.history.push({ role: "model", parts: [{ text: responseText }] });
-
-      // Prune history if too long to save tokens (keep last 20 turns)
-      if (this.history.length > 20) {
-          this.history = this.history.slice(this.history.length - 20);
-      }
-
-      return responseText;
-    }
-  }
-
-  const gemini = new GeminiService();
-
-  // --- State ---
-  const appState = {
-    version: APP_VERSION,
-    mode: 'forge',
-    harmonizerIsAllLanguages: false,
-    apiKey: "",
-    isLoading: false,
-    error: null,
-    results: [],
-    likedNames: [],
-    selectedLanguages: ["Spanish", "Irish"],
-    selectedThemes: ["Light","Balance"],
-    selectedStyle: "Lyrical & Melodic",
-    gender: "Unisex",
-    surname: "",
-    siblingNames: "",
-    firstNameForMiddle: "",
-    userLanguages: [],
-    userBlacklist: [],
-    rawApiResponse: null,
-    sessionGeneratedNames: [],
-    model: "models/gemini-1.5-flash",
-    outputAlphabet: "English (Default)",
-    generationController: null,
-    recentErrors: [],
-    hasSeenIntro: false,
-    defaultCount: 6,
-    apiTimeout: 60,
-    maxOutputTokens: 1024,
-    parallelMode: false,
-  };
-
-  // --- UI Element Cache ---
-  const ui = {
-      root: document.getElementById('app'),
-      controls: {},
-      results: {},
-      modals: {},
-  };
-
-  // --- Helpers ---
-  const el = (tag, cls='') => { const d = document.createElement(tag); if (cls) d.className = cls; return d; };
-  const debounce = (func, delay) => {
-    let timeout;
-    return (...args) => { clearTimeout(timeout); timeout = setTimeout(() => func.apply(this, args), delay); };
-  };
-  const debouncedSaveState = debounce(saveState, 500);
-  const showToast = (msg, isError = false) => {
-    const t = el('div', `fixed bottom-6 left-1/2 -translate-x-1/2 px-4 py-2 rounded shadow text-sm fade ${isError ? 'bg-red-800' : 'bg-[#0f2a41]'} text-white z-50`);
-    t.textContent = msg; document.body.appendChild(t);
-    setTimeout(() => t.remove(), 3000);
-  };
-
-  function toggleModal(modal, show) {
+export function toggleModal(modal, show) {
     if (modal) {
         modal.style.display = show ? 'flex' : 'none';
         document.body.style.overflow = show ? 'hidden' : '';
     }
-  }
+}
 
-  function createControlSection(label, controlElement) {
+function createControlSection(label, controlElement) {
     const section = el('div');
     const labelEl = el('label', 'text-sm font-medium');
     labelEl.textContent = label;
     controlElement.classList.add('mt-1');
     section.append(labelEl, controlElement);
     return section;
-  }
+}
 
-  function createSelectControl(options, selectedValue, changeHandler) {
-      const select = el('select', 'w-full bg-[#0b1622] border border-[#223447] rounded px-3 py-2 text-sm');
-      options.forEach(opt => {
-          const optionEl = el('option');
-          if (typeof opt === 'object') {
+function createSelectControl(options, selectedValue, changeHandler) {
+    const select = el('select', 'w-full bg-[#0b1622] border border-[#223447] rounded px-3 py-2 text-sm');
+    options.forEach(opt => {
+        const optionEl = el('option');
+        if (typeof opt === 'object') {
             optionEl.value = opt.value;
             optionEl.textContent = opt.text;
-          } else {
+        } else {
             optionEl.value = opt;
             optionEl.textContent = opt;
-          }
-          if (optionEl.value === selectedValue) optionEl.selected = true;
-          select.append(optionEl);
-      });
-      select.addEventListener('change', changeHandler);
-      return select;
-  }
+        }
+        if (optionEl.value === selectedValue) optionEl.selected = true;
+        select.append(optionEl);
+    });
+    select.addEventListener('change', changeHandler);
+    return select;
+}
 
-  function createNumericInputControl(label, stateKey, min, max, step) {
+function createNumericInputControl(label, stateKey, min, max, step) {
     const input = el('input', 'w-full bg-[#0b1622] border border-[#223447] rounded px-3 py-2 text-sm');
     input.type = 'number';
     input.min = min;
@@ -221,179 +67,89 @@
         }
     });
     return createControlSection(label, input);
-  }
+}
 
-  function createContextInput(placeholder, stateKey, className = '') {
+function createContextInput(placeholder, stateKey, className = '') {
     const input = el('input', `w-full bg-[#0b1622] border border-[#223447] rounded px-3 py-2 text-sm ${className}`);
     input.placeholder = placeholder;
     input.value = appState[stateKey];
     input.addEventListener('input', e => {
-      appState[stateKey] = e.target.value.trim();
-      updateControls();
-      debouncedSaveState();
+        appState[stateKey] = e.target.value.trim();
+        updateControls();
+        debouncedSaveState();
     });
     return input;
-  }
+}
 
-  // --- State Management ---
-  function saveState() {
-    try {
-        const stateToSave = { ...appState };
-        // Don't save transient state
-        ['isLoading', 'error', 'rawApiResponse', 'generationController'].forEach(key => delete stateToSave[key]);
-        localStorage.setItem(`nameForgeState_v${APP_VERSION}`, JSON.stringify(stateToSave));
-    } catch (e) { console.warn("Could not save state:", e); }
-  }
-
-  function loadState() {
-      try {
-        const saved = localStorage.getItem(`nameForgeState_v${APP_VERSION}`);
-        if (saved) {
-            const parsed = JSON.parse(saved);
-            const defaults = {
-                version: APP_VERSION,
-                mode: 'forge',
-                harmonizerIsAllLanguages: false,
-                likedNames: [],
-                userLanguages: [],
-                userBlacklist: [],
-                gender: "Unisex",
-                outputAlphabet: "English (Default)",
-                model: "models/gemini-1.5-flash",
-                recentErrors: [],
-                hasSeenIntro: false,
-                defaultCount: 6,
-                apiTimeout: 60,
-                maxOutputTokens: 1024,
-                parallelMode: false,
-            };
-            Object.assign(appState, defaults, parsed);
+export function updateResultsPanel() {
+    ui.results.panel.innerHTML = '';
+    if (appState.isLoading) {
+        ui.results.panel.innerHTML = `
+        <div class="flex flex-col items-center justify-center py-8 gap-4">
+            <div class="spinner"></div>
+            <div class="text-sm small-muted">Crafting names...</div>
+        </div>`;
+    } else if (appState.error) {
+        const escapedError = String(appState.error).replace(/</g, '&lt;');
+        ui.results.panel.innerHTML = `<div class="bg-[#2b1a1a] border border-[#5b2626] rounded p-4"><div class="text-red-300 font-semibold">Error</div><div class="small-muted mt-2">${escapedError}</div></div>`;
+    } else if (!appState.results.length) {
+        if (appState.rawApiResponse) {
+            const escapedResponse = appState.rawApiResponse.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            ui.results.panel.innerHTML = `
+                <div class="flex flex-col gap-3 p-2">
+                    <div class="font-semibold text-yellow-400">JSON Parsing Failed</div>
+                    <div class="small-muted">The API returned a response, but it was not in the expected JSON format. Here is the raw text from the model:</div>
+                    <pre class="w-full h-64 bg-[#0b1622] border border-[#223447] rounded p-2 text-xs font-mono overflow-auto">${escapedResponse}</pre>
+                </div>`;
+        } else {
+                ui.results.panel.innerHTML = '<div class="flex-1 flex items-center justify-center small-muted h-full">No names yet — click Generate.</div>';
         }
-      } catch (e) { console.warn("Could not load state:", e); }
-  }
-
-  // --- API & Data Processing ---
-
-  /**
-   * Parses the raw text response from the API.
-   */
-  function parseApiResponse(text) {
-    if (!text) return [];
-    try {
-      const parsed = JSON.parse(text);
-      if (Array.isArray(parsed)) return parsed;
-      return [];
-    } catch (e) {
-      console.warn("Direct JSON parse failed, attempting cleanup:", e);
-      let cleanedText = text.replace(/```[a-z]*\n?/gi, '').replace(/```/g, '').trim();
-      try {
-          const parsed = JSON.parse(cleanedText);
-          if (Array.isArray(parsed)) return parsed;
-      } catch(e2) {
-          console.warn("Cleanup parse failed:", e2);
-      }
-
-      if (!appState.recentErrors) appState.recentErrors = [];
-      appState.recentErrors.push(`${new Date().toLocaleTimeString()}: Failed to parse API response`);
-      if (appState.recentErrors.length > 5) appState.recentErrors.shift();
-      return [];
+    } else {
+        const grid = el('div','grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2');
+        if (appState.mode === 'forge') {
+            const clusters = appState.results.reduce((acc, item) => ((acc[item.cluster] = acc[item.cluster] || []).push(item), acc), {});
+            Object.keys(clusters).sort().forEach(clusterName => {
+                ui.results.panel.insertAdjacentHTML('beforeend', `<h3 class="text-md font-semibold text-blue-300 mt-4 first:mt-0">${clusterName}</h3>`);
+                const clusterGrid = el('div','grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2');
+                clusters[clusterName].forEach(item => clusterGrid.append(createNameCard(item)));
+                ui.results.panel.append(clusterGrid);
+            });
+        } else {
+            appState.results.forEach(item => grid.append(createNameCard(item)));
+            ui.results.panel.append(grid);
+        }
     }
-  }
+}
 
-  function processApiResponse(rawArray) {
-    if (!rawArray?.length) return [];
-    const fullBlacklist = appState.userBlacklist.map(b => b.toLowerCase());
-    return rawArray.map(it => {
-      let name = (it.name || "").toString().trim();
-      if (!name || fullBlacklist.some(b => name.toLowerCase().includes(b))) return null;
-      if (appState.outputAlphabet === 'English (Simplified/No Accents)') {
-        name = name.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-      }
-      const base = { name };
-      if (appState.mode === 'forge') {
-          return { ...base,
-            meaning: (it.meaning || "").toString().trim(),
-            roots: (it.roots || "").toString().trim(),
-            cluster: (it.cluster || "Misc").trim(),
-          };
-      } else {
-          return { ...base,
-            valid: it.valid === true,
-            pronunciations: it.pronunciations || [],
-            semanticCheck: it.semanticCheck || "Pass" // Default to Pass if not provided
-          };
-      }
-    }).filter(Boolean);
-  }
-
-  // --- UI Update & Rendering ---
-  function updateResultsPanel() {
-      ui.results.panel.innerHTML = '';
-      if (appState.isLoading) {
-          ui.results.panel.innerHTML = `
-            <div class="flex flex-col items-center justify-center py-8 gap-4">
-              <div class="spinner"></div>
-              <div class="text-sm small-muted">Crafting names...</div>
-            </div>`;
-      } else if (appState.error) {
-          const escapedError = String(appState.error).replace(/</g, '&lt;');
-          ui.results.panel.innerHTML = `<div class="bg-[#2b1a1a] border border-[#5b2626] rounded p-4"><div class="text-red-300 font-semibold">Error</div><div class="small-muted mt-2">${escapedError}</div></div>`;
-      } else if (!appState.results.length) {
-            if (appState.rawApiResponse) {
-                const escapedResponse = appState.rawApiResponse.replace(/</g, '&lt;').replace(/>/g, '&gt;');
-                ui.results.panel.innerHTML = `
-                    <div class="flex flex-col gap-3 p-2">
-                        <div class="font-semibold text-yellow-400">JSON Parsing Failed</div>
-                        <div class="small-muted">The API returned a response, but it was not in the expected JSON format. Here is the raw text from the model:</div>
-                        <pre class="w-full h-64 bg-[#0b1622] border border-[#223447] rounded p-2 text-xs font-mono overflow-auto">${escapedResponse}</pre>
-                    </div>`;
-            } else {
-                 ui.results.panel.innerHTML = '<div class="flex-1 flex items-center justify-center small-muted h-full">No names yet — click Generate.</div>';
-            }
-      } else {
-          const grid = el('div','grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2');
-          if (appState.mode === 'forge') {
-              const clusters = appState.results.reduce((acc, item) => ((acc[item.cluster] = acc[item.cluster] || []).push(item), acc), {});
-              Object.keys(clusters).sort().forEach(clusterName => {
-                  ui.results.panel.insertAdjacentHTML('beforeend', `<h3 class="text-md font-semibold text-blue-300 mt-4 first:mt-0">${clusterName}</h3>`);
-                  const clusterGrid = el('div','grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2');
-                  clusters[clusterName].forEach(item => clusterGrid.append(createNameCard(item)));
-                  ui.results.panel.append(clusterGrid);
-              });
-          } else {
-              appState.results.forEach(item => grid.append(createNameCard(item)));
-              ui.results.panel.append(grid);
-          }
-      }
-  }
-
-  function updateControls() {
+export function updateControls() {
     updateLanguageChips();
     if (appState.mode === 'forge') {
-        updateChipSelector(ui.controls.themeChips, THEME_OPTIONS);
+        updateChipSelector(ui.controls.themeChips, CONFIG.THEME_OPTIONS);
     }
     let buttonText = "Generate Names";
     if (appState.sessionGeneratedNames.length > 0 && !appState.isLoading) {
         buttonText = "Generate More";
     }
-    ui.controls.generateButton.textContent = buttonText;
+    if (ui.controls.generateButton) {
+        ui.controls.generateButton.textContent = buttonText;
+    }
     updateGenerateButtonState();
-  }
+}
 
-  function updateGenerateButtonState() {
+function updateGenerateButtonState() {
     const langRequirement = appState.selectedLanguages.length >= 2 && appState.selectedLanguages.length <= 3;
     const themeRequirement = appState.mode === 'forge' ? appState.selectedThemes.length >= 1 : true;
     const isReady = langRequirement && themeRequirement;
     if (ui.controls.generateButton) {
-      ui.controls.generateButton.disabled = !isReady;
-      ui.controls.generateButton.classList.toggle('opacity-50', !isReady);
-      ui.controls.generateButton.classList.toggle('cursor-not-allowed', !isReady);
+        ui.controls.generateButton.disabled = !isReady;
+        ui.controls.generateButton.classList.toggle('opacity-50', !isReady);
+        ui.controls.generateButton.classList.toggle('cursor-not-allowed', !isReady);
     }
-  }
+}
 
-  function updateLanguageChips() {
+function updateLanguageChips() {
     ui.controls.languageChips.innerHTML = '';
-    const allLangs = [...new Set([...LANG_OPTIONS, ...appState.userLanguages])];
+    const allLangs = [...new Set([...CONFIG.LANG_OPTIONS, ...appState.userLanguages])];
 
     appState.selectedLanguages.forEach(opt => {
         const c = el('button', 'chip active');
@@ -409,51 +165,50 @@
         c.dataset.option = opt;
         ui.controls.languageChips.append(c);
     });
-  }
+}
 
-  function updateChipSelector(container, options) {
-      container.innerHTML = '';
-      options.forEach(opt => {
-          const c = el('button', 'chip'); c.textContent = opt; c.dataset.option = opt;
-          if (appState[container.dataset.stateKey]?.includes(opt)) c.classList.add('active');
-          container.append(c);
-      });
-  }
+function updateChipSelector(container, options) {
+    container.innerHTML = '';
+    options.forEach(opt => {
+        const c = el('button', 'chip'); c.textContent = opt; c.dataset.option = opt;
+        if (appState[container.dataset.stateKey]?.includes(opt)) c.classList.add('active');
+        container.append(c);
+    });
+}
 
-  function createNameCard(item) {
-      const card = el('div',`bg-[#081426] border border-[#123047] rounded p-4 flex flex-col gap-2 fade`);
-      card.dataset.nameCard = item.name;
-      const header = el('div', 'flex items-start justify-between gap-2');
-      header.innerHTML = `<div class="text-xl font-semibold">${item.name}</div>`;
-      card.append(header);
+function createNameCard(item) {
+    const card = el('div',`bg-[#081426] border border-[#123047] rounded p-4 flex flex-col gap-2 fade`);
+    card.dataset.nameCard = item.name;
+    const header = el('div', 'flex items-start justify-between gap-2');
+    header.innerHTML = `<div class="text-xl font-semibold">${item.name}</div>`;
+    card.append(header);
 
-      const isLiked = appState.likedNames.some(n => n.name === item.name);
-      const isDisliked = appState.userBlacklist.includes(item.name.toLowerCase());
+    const isLiked = appState.likedNames.some(n => n.name === item.name);
+    const isDisliked = appState.userBlacklist.includes(item.name.toLowerCase());
 
-      if (appState.mode === 'forge') {
-          const meaningEl = el('div', 'italic small-muted'); meaningEl.textContent = item.meaning || '—';
-          const rootsEl = el('div', 'text-xs mt-auto pt-2 small-muted'); rootsEl.innerHTML = `<strong>Roots:</strong> ${item.roots || '—'}`;
-          const actions = el('div', 'flex flex-wrap gap-2 mt-2');
-          actions.innerHTML = `<button class="chip" data-action="copy-name" data-name="${item.name}">Copy</button><button class="chip thumb-btn ${isLiked ? 'active' : ''}" data-action="thumb-up" data-name="${item.name}">👍</button><button class="chip thumb-btn ${isDisliked ? 'active' : ''}" data-action="thumb-down" data-name="${item.name}">👎</button>`;
-          card.append(meaningEl, rootsEl, actions);
-      } else {
-          const statusColor = item.valid ? 'text-green-400' : 'text-yellow-400';
-          const validation = el('div', 'text-xs');
-          validation.innerHTML = `<strong>Validation:</strong> <span class="${statusColor}">${item.valid ? 'Pass' : 'Approximate'}</span>`;
-          if (item.semanticCheck !== 'Pass') {
-            validation.innerHTML += `<br><strong>Semantic Note:</strong> <span class="text-yellow-400">${item.semanticCheck}</span>`;
-          }
-          const pronunciations = el('div', 'flex flex-col gap-1 mt-2 text-sm');
-          item.pronunciations?.forEach(p => pronunciations.insertAdjacentHTML('beforeend', `<div><strong>${p.lang}:</strong> <span class="italic small-muted">/${p.phonetic}/</span></div>`));
-          const actions = el('div', 'flex flex-wrap gap-2 mt-2');
-          actions.innerHTML = `<button class="chip" data-action="copy-name" data-name="${item.name}">Copy</button>`;
-          card.append(validation, pronunciations, actions);
-      }
-      return card;
-  }
+    if (appState.mode === 'forge') {
+        const meaningEl = el('div', 'italic small-muted'); meaningEl.textContent = item.meaning || '—';
+        const rootsEl = el('div', 'text-xs mt-auto pt-2 small-muted'); rootsEl.innerHTML = `<strong>Roots:</strong> ${item.roots || '—'}`;
+        const actions = el('div', 'flex flex-wrap gap-2 mt-2');
+        actions.innerHTML = `<button class="chip" data-action="copy-name" data-name="${item.name}">Copy</button><button class="chip thumb-btn ${isLiked ? 'active' : ''}" data-action="thumb-up" data-name="${item.name}">👍</button><button class="chip thumb-btn ${isDisliked ? 'active' : ''}" data-action="thumb-down" data-name="${item.name}">👎</button>`;
+        card.append(meaningEl, rootsEl, actions);
+    } else {
+        const statusColor = item.valid ? 'text-green-400' : 'text-yellow-400';
+        const validation = el('div', 'text-xs');
+        validation.innerHTML = `<strong>Validation:</strong> <span class="${statusColor}">${item.valid ? 'Pass' : 'Approximate'}</span>`;
+        if (item.semanticCheck !== 'Pass') {
+        validation.innerHTML += `<br><strong>Semantic Note:</strong> <span class="text-yellow-400">${item.semanticCheck}</span>`;
+        }
+        const pronunciations = el('div', 'flex flex-col gap-1 mt-2 text-sm');
+        item.pronunciations?.forEach(p => pronunciations.insertAdjacentHTML('beforeend', `<div><strong>${p.lang}:</strong> <span class="italic small-muted">/${p.phonetic}/</span></div>`));
+        const actions = el('div', 'flex flex-wrap gap-2 mt-2');
+        actions.innerHTML = `<button class="chip" data-action="copy-name" data-name="${item.name}">Copy</button>`;
+        card.append(validation, pronunciations, actions);
+    }
+    return card;
+}
 
-  // --- Event Handling ---
-  function handleCopyAll() {
+function handleCopyAll() {
     if (!appState.results.length) { showToast('No results to copy.', true); return; }
     const text = appState.results.map(r => {
         if (appState.mode === 'forge') return `${r.name} - ${r.meaning}`;
@@ -461,9 +216,9 @@
     }).join('\n');
     navigator.clipboard.writeText(text);
     showToast('All names copied!');
-  }
+}
 
-  function handleExport() {
+function handleExport() {
     if (!appState.results.length) { showToast('No results to export.', true); return; }
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appState.results, null, 2));
     const downloadAnchorNode = document.createElement('a');
@@ -472,27 +227,27 @@
     document.body.appendChild(downloadAnchorNode); // required for firefox
     downloadAnchorNode.click();
     downloadAnchorNode.remove();
-  }
+}
 
-  function handleSurpriseMe() {
+function handleSurpriseMe() {
     // Random Languages (2 or 3)
     const numLangs = Math.random() > 0.5 ? 2 : 3;
-    const shuffledLangs = [...LANG_OPTIONS].sort(() => 0.5 - Math.random());
+    const shuffledLangs = [...CONFIG.LANG_OPTIONS].sort(() => 0.5 - Math.random());
     appState.selectedLanguages = shuffledLangs.slice(0, numLangs);
 
     // Random Themes (1 or 2) - only if in Forge mode
     if (appState.mode === 'forge') {
         const numThemes = Math.random() > 0.7 ? 2 : 1;
-        const shuffledThemes = [...THEME_OPTIONS].sort(() => 0.5 - Math.random());
+        const shuffledThemes = [...CONFIG.THEME_OPTIONS].sort(() => 0.5 - Math.random());
         appState.selectedThemes = shuffledThemes.slice(0, numThemes);
     }
 
     showToast('🎲 Randomized selections!');
     debouncedSaveState();
     updateControls();
-  }
+}
 
-  function handleControlsClick(event) {
+function handleControlsClick(event) {
     const chip = event.target.closest('.chip[data-option]');
     if (chip) {
         const { option } = chip.dataset;
@@ -516,9 +271,9 @@
         debouncedSaveState();
         updateControls();
     }
-  }
+}
 
-  function handleFeedback(name, isThumbUp) {
+function handleFeedback(name, isThumbUp) {
     const nameLower = name.toLowerCase();
     const isLiked = appState.likedNames.some(n => n.name === name);
     const isDisliked = appState.userBlacklist.includes(nameLower);
@@ -552,28 +307,28 @@
         if (upBtn) upBtn.classList.toggle('active', appState.likedNames.some(n => n.name === name));
         if (downBtn) downBtn.classList.toggle('active', appState.userBlacklist.includes(nameLower));
     }
-  }
+}
 
-  function handleResultsPanelClick(event) {
-      const btn = event.target.closest('button[data-action]');
-      if (!btn) return;
-      const { action, name } = btn.dataset;
+function handleResultsPanelClick(event) {
+    const btn = event.target.closest('button[data-action]');
+    if (!btn) return;
+    const { action, name } = btn.dataset;
 
-      switch (action) {
+    switch (action) {
         case 'copy-name':
-          navigator.clipboard.writeText(name);
-          showToast('Copied!');
-          break;
+        navigator.clipboard.writeText(name);
+        showToast('Copied!');
+        break;
         case 'thumb-up':
-          handleFeedback(name, true);
-          break;
+        handleFeedback(name, true);
+        break;
         case 'thumb-down':
-          handleFeedback(name, false);
-          break;
-      }
-  }
+        handleFeedback(name, false);
+        break;
+    }
+}
 
-  function createModal(id, title, contentEl, footerContent) {
+function createModal(id, title, contentEl, footerContent) {
     const modal = el('div', 'modal-backdrop items-center justify-center');
     modal.id = id;
     const content = el('div', 'modal-content bg-[#0e2030] border border-[#1b3146] rounded-lg p-6 flex flex-col gap-4 w-full max-w-lg');
@@ -588,15 +343,15 @@
     }
     modal.append(content);
     return modal;
-  }
+}
 
-  function updateHistoryModal() {
+export function updateHistoryModal() {
     const historyContent = ui.modals.history.querySelector('.scrolling-panel');
     historyContent.innerHTML = '';
 
     // Stats
     const stats = el('div', 'text-xs small-muted mb-4 p-2 bg-black/20 rounded');
-    stats.textContent = `Session Turns: ${gemini.history.length / 2}`;
+    stats.textContent = `Session Turns: ${geminiService.history.length / 2}`;
     historyContent.append(stats);
 
     if (appState.likedNames.length > 0) {
@@ -645,10 +400,9 @@
     if (!appState.likedNames.length && !appState.userBlacklist.length && !appState.sessionGeneratedNames.length) {
         historyContent.innerHTML = '<div class="text-center small-muted py-8">No session data yet. Generate some names to see feedback history!</div>';
     }
-  }
+}
 
-  // --- UI Creation Functions ---
-  function createHeader() {
+function createHeader() {
     const header = el('div', 'flex justify-between items-center');
     const titleDiv = el('div');
     titleDiv.innerHTML = `<h1 class="text-xl font-semibold">NameForge</h1><div class="small-muted mt-1">Craft a name with meaning</div>`;
@@ -658,7 +412,7 @@
     resetBtn.textContent = '↺ Reset Context';
     resetBtn.title = 'Clear chat history and start fresh';
     resetBtn.addEventListener('click', () => {
-        gemini.resetHistory();
+        geminiService.resetHistory();
         appState.sessionGeneratedNames = [];
         showToast('Session context cleared.');
         updateControls();
@@ -675,9 +429,9 @@
     buttonsDiv.append(resetBtn, historyBtn, settingsBtn);
     header.append(titleDiv, buttonsDiv);
     return header;
-  }
+}
 
-  function createControlsPanel() {
+function createControlsPanel() {
     const left = el('div','md:col-span-1 bg-[#071425] border border-[#0e2334] rounded-xl p-5 flex flex-col gap-4 h-fit');
     left.append(createHeader());
 
@@ -713,7 +467,7 @@
     addLangBtn.addEventListener('click', () => {
         const newLang = langInput.value.trim();
         if (newLang.length < 2) return;
-        if (newLang && ![...LANG_OPTIONS, ...appState.userLanguages].map(l=>l.toLowerCase()).includes(newLang.toLowerCase())) {
+        if (newLang && ![...CONFIG.LANG_OPTIONS, ...appState.userLanguages].map(l=>l.toLowerCase()).includes(newLang.toLowerCase())) {
             appState.userLanguages.push(newLang);
             if(appState.selectedLanguages.length < 3) appState.selectedLanguages.push(newLang);
             debouncedSaveState(); updateControls();
@@ -749,7 +503,7 @@
     ui.controls.themesSection = createControlSection('Themes (choose 1–2)', el('div', 'flex flex-wrap gap-2'));
     ui.controls.themeChips = ui.controls.themesSection.querySelector('div');
     ui.controls.themeChips.dataset.stateKey = 'selectedThemes';
-    ui.controls.styleSection = createControlSection('Style', createSelectControl(STYLE_OPTIONS, appState.selectedStyle, e => { appState.selectedStyle = e.target.value; debouncedSaveState(); }));
+    ui.controls.styleSection = createControlSection('Style', createSelectControl(CONFIG.STYLE_OPTIONS, appState.selectedStyle, e => { appState.selectedStyle = e.target.value; debouncedSaveState(); }));
     ui.controls.forgeContainer.append(ui.controls.themesSection, ui.controls.styleSection);
 
     flavorSection.append(ui.controls.forgeContainer, ui.controls.harmonizerContainer);
@@ -759,9 +513,9 @@
     left.append(controlsContainer);
 
     return { left, modeSwitcher };
-  }
+}
 
-  function createResultsPanel() {
+function createResultsPanel() {
     const right = el('div','md:col-span-2 bg-[#071427] border border-[#0e2030] rounded-xl p-5 flex flex-col gap-2');
 
     ui.controls.generateButton = el('button','bg-gradient-to-r from-[#3b82f6] to-[#2563eb] text-white px-4 py-3 rounded font-semibold shadow w-full');
@@ -773,9 +527,9 @@
     ui.results.panel = el('div','mt-2 p-3 bg-[#071a25] border border-[#0f2a3a] rounded-lg min-h-[280px] flex flex-col');
     right.append(ui.results.panel);
     return right;
-  }
+}
 
-  function initLayout() {
+export function initLayout() {
     ui.root.innerHTML = '';
     const appWrap = el('div','max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6');
 
@@ -793,7 +547,7 @@
     apiKeyInput.placeholder = 'Enter your Gemini API key';
     apiKeyInput.value = appState.apiKey;
     apiKeyInput.addEventListener('input', e => { appState.apiKey = e.target.value.trim(); debouncedSaveState(); });
-    const modelSel = createSelectControl(MODEL_OPTIONS, appState.model, e => { appState.model = e.target.value; debouncedSaveState(); });
+    const modelSel = createSelectControl(CONFIG.MODEL_OPTIONS, appState.model, e => { appState.model = e.target.value; debouncedSaveState(); });
     const alphabetOptions = ['English (Default)', 'English (Simplified/No Accents)'];
     const alphabetSel = createSelectControl(alphabetOptions, appState.outputAlphabet, e => { appState.outputAlphabet = e.target.value; debouncedSaveState(); });
     settingsContent.append(
@@ -833,15 +587,15 @@
     // Welcome Modal
     const welcomeContent = el('div', 'flex flex-col gap-3 text-sm small-muted');
     welcomeContent.innerHTML = `
-      <p>Welcome to NameForge! This app helps you create unique names by blending languages and themes.</p>
-      <div class="p-3 bg-black/20 rounded-md">
+        <p>Welcome to NameForge! This app helps you create unique names by blending languages and themes.</p>
+        <div class="p-3 bg-black/20 rounded-md">
         <strong class="text-base text-gray-200">How it works:</strong>
         <ul class="list-disc list-inside mt-2 space-y-1">
             <li><strong>Forge Mode:</strong> Creates new, poetic names from language roots and themes.</li>
             <li><strong>Harmonizer Mode:</strong> Finds existing names that work across multiple cultures.</li>
         </ul>
-      </div>
-      <p>To generate names, the app uses the Google Gemini API. You'll need a free API key to get started.</p>
+        </div>
+        <p>To generate names, the app uses the Google Gemini API. You'll need a free API key to get started.</p>
     `;
     const welcomeApiKeyInput = el('input', 'w-full bg-[#0b1622] border border-[#223447] rounded px-3 py-2 text-sm');
     welcomeApiKeyInput.placeholder = 'Paste your Gemini API key here';
@@ -896,8 +650,8 @@
                 <div class="small-muted">${isForge ? 'Poetic, culturally coined names' : 'Names that work across cultures'}</div>
             </div>
             <div class="flex gap-2">
-                 <button id="copy-all-btn" class="chip text-xs" title="Copy all names">Copy All</button>
-                 <button id="export-btn" class="chip text-xs" title="Download JSON">Export</button>
+                    <button id="copy-all-btn" class="chip text-xs" title="Copy all names">Copy All</button>
+                    <button id="export-btn" class="chip text-xs" title="Download JSON">Export</button>
             </div>
         `;
         ui.results.header.querySelector('#copy-all-btn').addEventListener('click', handleCopyAll);
@@ -927,135 +681,9 @@
 
     left.addEventListener('click', handleControlsClick);
     right.addEventListener('click', handleResultsPanelClick);
-    ui.controls.generateButton.addEventListener('click', () => doGenerate());
-  }
 
-  // --- Prompt Building ---
-
-  function getSystemInstruction() {
-      if (appState.mode === 'forge') {
-          return `You are a linguist creating new names.
-Output ONLY a valid JSON array of objects with this schema: [{"name": "", "roots": "morpheme (Language: gloss)", "meaning": "", "cluster": "Style Category"}]
-`;
-      } else {
-          return `You are a cross-cultural linguistic analyst.
-Output ONLY a valid JSON array of objects with this schema:
-[{"name": "", "valid": boolean, "pronunciations": [{"lang": "", "phonetic": ""}], "semanticCheck": "Pass | Note"}]
-`;
-      }
-  }
-
-  function getUserPrompt(count) {
-      const { selectedLanguages, likedNames, selectedThemes, selectedStyle, gender, userBlacklist, sessionGeneratedNames, mode, harmonizerIsAllLanguages, surname, siblingNames, firstNameForMiddle } = appState;
-
-      const context = [];
-      if (likedNames.length > 0) context.push(`Inspiration: ${likedNames.map(n => n.name).join(', ')}.`);
-      if (userBlacklist.length > 0) context.push(`Blacklist: ${userBlacklist.join(', ')}.`);
-
-      let task = "";
-      if (mode === 'forge') {
-         task = `Generate ${count} original, ${gender} names by fusing: ${selectedLanguages.join(' + ')}. Themes: ${selectedThemes.join(', ')}. Style: ${selectedStyle}.`;
-         if (surname) task += ` Surname: ${surname}.`;
-         if (siblingNames) task += ` Siblings: ${siblingNames}.`;
-         if (firstNameForMiddle) task += ` First Name (generating middle): ${firstNameForMiddle}.`;
-      } else {
-         const strictness = harmonizerIsAllLanguages ? "all" : "multiple";
-         task = `Find ${count} ${gender} names that work in ${strictness} of: ${selectedLanguages.join(', ')}.`;
-      }
-
-      return `${context.join('\n')}
-TASK: ${task}`;
-  }
-
-    async function doGenerate() {
-        if (appState.isLoading) return;
-        updateGenerateButtonState();
-        if (ui.controls.generateButton.disabled) {
-            showToast("Please select 2-3 languages and (in Forge mode) at least 1 theme.", true);
-            return;
-        }
-
-        const key = appState.apiKey.trim();
-        const count = appState.defaultCount;
-        const systemInstr = getSystemInstruction();
-        const userPrompt = getUserPrompt(count);
-
-        const contextHash = JSON.stringify({
-            mode: appState.mode,
-            langs: appState.selectedLanguages,
-            themes: appState.selectedThemes,
-            style: appState.selectedStyle
-        });
-
-        if (!key) {
-             // Update Prompt View for user copying
-            document.getElementById('system-prompt-view').value = systemInstr;
-            document.getElementById('user-prompt-view').value = userPrompt;
-            toggleModal(ui.modals.prompt, true);
-            showToast("API Key missing. Copy prompt from modal.", true);
-            return;
-        }
-
-        appState.error = null;
-        appState.results = [];
-        appState.rawApiResponse = null;
-        appState.isLoading = true;
-        appState.generationController = new AbortController();
-        updateResultsPanel();
-
-        gemini.configure(key, appState.model);
-
-        const timeoutId = setTimeout(() => {
-            if(appState.generationController) appState.generationController.abort()
-        }, appState.apiTimeout * 1000);
-
-        try {
-            // Serial Request (Chat)
-            const responseText = await gemini.generate(userPrompt, systemInstr, contextHash, {
-                maxOutputTokens: appState.maxOutputTokens
-            }, appState.generationController.signal);
-
-            appState.rawApiResponse = responseText;
-            const allResults = processApiResponse(parseApiResponse(responseText));
-
-            if (allResults.length) {
-                appState.sessionGeneratedNames.push(...allResults.map(p => p.name));
-                appState.results = allResults;
-            }
-
-        } catch (error) {
-            let errorMsg;
-            if (error.name === 'AbortError') {
-                errorMsg = "Generation timed out.";
-            } else {
-                errorMsg = error.message || String(error);
-            }
-            appState.error = errorMsg;
-
-            if (!appState.recentErrors) appState.recentErrors = [];
-            appState.recentErrors.push(`${new Date().toLocaleTimeString()}: ${errorMsg}`);
-        } finally {
-            clearTimeout(timeoutId);
-            appState.isLoading = false;
-            appState.generationController = null;
-            updateResultsPanel();
-            updateControls(); // Updates "Generate More" text
-            debouncedSaveState();
-        }
-    }
-
-  window.addEventListener('beforeunload', () => {
-      if (appState.generationController) {
-          appState.generationController.abort();
-      }
-  });
-
-  loadState();
-  initLayout();
-  updateControls();
-  updateResultsPanel();
-
-  if (!appState.hasSeenIntro) {
-    toggleModal(ui.modals.welcome, true);
-  }
-})();
+    // Bind Generate Button
+    ui.controls.generateButton.addEventListener('click', () => {
+        if(generateHandler) generateHandler();
+    });
+}
