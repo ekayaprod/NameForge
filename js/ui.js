@@ -541,17 +541,7 @@ function createResultsPanel() {
     return right;
 }
 
-export function initLayout() {
-    ui.root.innerHTML = '';
-    const appWrap = el('div','max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6');
-
-    const { left, modeSwitcher } = createControlsPanel();
-    const right = createResultsPanel();
-
-    appWrap.append(left, right);
-    ui.root.append(appWrap);
-
-    // --- Modals ---
+function createModals() {
     // Settings Modal
     const settingsContent = el('div', 'flex flex-col gap-4');
     const apiKeyInput = el('input', 'w-full bg-[#0b1622] border border-[#223447] rounded px-3 py-2 text-sm');
@@ -645,33 +635,34 @@ export function initLayout() {
     });
     ui.modals.welcome = createModal('welcome-modal', 'Welcome to NameForge', welcomeContent, [noKeyBtn, saveKeyBtn]);
 
-    ui.root.append(ui.modals.settings, ui.modals.history, ui.modals.prompt, ui.modals.welcome);
+    return [ui.modals.settings, ui.modals.history, ui.modals.prompt, ui.modals.welcome];
+}
 
-    // --- Event Listeners & Initial UI State ---
-    const toggleModeUI = (mode) => {
-        const isForge = mode === 'forge';
-        ui.controls.forgeContainer.style.display = isForge ? 'flex' : 'none';
-        ui.controls.advancedSection.style.display = isForge ? 'block' : 'none';
-        ui.controls.harmonizerContainer.style.display = isForge ? 'none' : 'flex';
-        ui.controls.themesSection.style.display = isForge ? 'block' : 'none';
+function toggleModeUI(mode) {
+    const isForge = mode === 'forge';
+    ui.controls.forgeContainer.style.display = isForge ? 'flex' : 'none';
+    ui.controls.advancedSection.style.display = isForge ? 'block' : 'none';
+    ui.controls.harmonizerContainer.style.display = isForge ? 'none' : 'flex';
+    ui.controls.themesSection.style.display = isForge ? 'block' : 'none';
 
-        ui.results.header.className = "flex justify-between items-end";
-        ui.results.header.innerHTML = `
-            <div>
-                <h2 class="text-lg font-semibold">${isForge ? 'Results' : 'Harmonized Names'}</h2>
-                <div class="small-muted">${isForge ? 'Poetic, culturally coined names' : 'Names that work across cultures'}</div>
-            </div>
-            <div class="flex gap-2">
-                    <button id="copy-all-btn" class="chip text-xs" title="Copy all names">Copy All</button>
-                    <button id="export-btn" class="chip text-xs" title="Download JSON">Export</button>
-            </div>
-        `;
-        ui.results.header.querySelector('#copy-all-btn').addEventListener('click', handleCopyAll);
-        ui.results.header.querySelector('#export-btn').addEventListener('click', handleExport);
+    ui.results.header.className = "flex justify-between items-end";
+    ui.results.header.innerHTML = `
+        <div>
+            <h2 class="text-lg font-semibold">${isForge ? 'Results' : 'Harmonized Names'}</h2>
+            <div class="small-muted">${isForge ? 'Poetic, culturally coined names' : 'Names that work across cultures'}</div>
+        </div>
+        <div class="flex gap-2">
+                <button id="copy-all-btn" class="chip text-xs" title="Copy all names">Copy All</button>
+                <button id="export-btn" class="chip text-xs" title="Download JSON">Export</button>
+        </div>
+    `;
+    ui.results.header.querySelector('#copy-all-btn').addEventListener('click', handleCopyAll);
+    ui.results.header.querySelector('#export-btn').addEventListener('click', handleExport);
 
-        appState.results = []; updateResultsPanel(); updateControls();
-    };
+    appState.results = []; updateResultsPanel(); updateControls();
+}
 
+function setupEventListeners(left, right, modeSwitcher) {
     toggleModeUI(appState.mode);
     ui.controls.harmonizerToggleSection.querySelector('input').checked = appState.harmonizerIsAllLanguages;
 
@@ -698,4 +689,20 @@ export function initLayout() {
     ui.controls.generateButton.addEventListener('click', () => {
         if(generateHandler) generateHandler();
     });
+}
+
+export function initLayout() {
+    ui.root.innerHTML = '';
+    const appWrap = el('div','max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6');
+
+    const { left, modeSwitcher } = createControlsPanel();
+    const right = createResultsPanel();
+
+    appWrap.append(left, right);
+    ui.root.append(appWrap);
+
+    const modals = createModals();
+    ui.root.append(...modals);
+
+    setupEventListeners(left, right, modeSwitcher);
 }
