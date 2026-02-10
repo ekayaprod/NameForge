@@ -29,7 +29,6 @@ export const appState = {
   defaultCount: 6,
   apiTimeout: 60,
   maxOutputTokens: 1024,
-  parallelMode: false,
 };
 
 export function saveState() {
@@ -61,7 +60,6 @@ export function loadState() {
               defaultCount: 6,
               apiTimeout: 60,
               maxOutputTokens: 1024,
-              parallelMode: false,
           };
           Object.assign(appState, defaults, parsed);
       }
