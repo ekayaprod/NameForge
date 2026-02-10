@@ -2,6 +2,7 @@ import { appState, loadState, debouncedSaveState } from './state.js';
 import { ui, initLayout, updateControls, updateResultsPanel, setGenerateHandler, toggleModal } from './ui.js';
 import { geminiService } from './api.js';
 import { showToast } from './utils.js';
+import { CONFIG } from './config.js';
 
 // --- Schemas ---
 const FORGE_SCHEMA = {
@@ -200,6 +201,9 @@ async function doGenerate() {
 
         if (allResults.length) {
             appState.sessionGeneratedNames.push(...allResults.map(p => p.name));
+            if (appState.sessionGeneratedNames.length > CONFIG.MAX_SESSION_HISTORY) {
+                appState.sessionGeneratedNames = appState.sessionGeneratedNames.slice(-CONFIG.MAX_SESSION_HISTORY);
+            }
             appState.results = allResults;
         }
 
