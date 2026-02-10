@@ -1,6 +1,7 @@
 export const CONFIG = {
   API_BASE_URL: "https://generativelanguage.googleapis.com/v1beta/",
   APP_VERSION: "9.1", // Bumped version for refactor
+  MAX_SESSION_HISTORY: 200,
   LANG_OPTIONS: ["Turkish","Nordic","Latin","Celtic","Japanese","Greek","Spanish","Irish", "Russian", "Korean", "English"],
   THEME_OPTIONS: ["Nature","Cosmic","Balance","Strength","Water","Light","Shadow","Music", "Fire", "Mountain", "Ocean", "Sky", "Forest", "Mythic"],
   STYLE_OPTIONS: ["Lyrical & Melodic","Archaic & Mythic","Minimalist & Modern","Heroic & Resonant", "Elegant & Refined", "Grounded & Earthy", "Mystical & Ethereal"],
