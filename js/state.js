@@ -69,3 +69,9 @@ export function loadState() {
 }
 
 export const debouncedSaveState = debounce(saveState, 500);
+
+export function logError(message) {
+  if (!appState.recentErrors) appState.recentErrors = [];
+  appState.recentErrors.push(`${new Date().toLocaleTimeString()}: ${message}`);
+  if (appState.recentErrors.length > 5) appState.recentErrors.shift();
+}
