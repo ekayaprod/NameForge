@@ -192,7 +192,9 @@ function createNameCard(item) {
     const card = el('div',`bg-[#081426] border border-[#123047] rounded p-4 flex flex-col gap-2 fade`);
     card.dataset.nameCard = item.name;
     const header = el('div', 'flex items-start justify-between gap-2');
-    header.innerHTML = `<div class="text-xl font-semibold">${item.name}</div>`;
+    const nameEl = el('div', 'text-xl font-semibold');
+    nameEl.textContent = item.name;
+    header.append(nameEl);
     card.append(header);
 
     const isLiked = appState.likedNames.some(n => n.name === item.name);
@@ -200,21 +202,72 @@ function createNameCard(item) {
 
     if (appState.mode === 'forge') {
         const meaningEl = el('div', 'italic small-muted'); meaningEl.textContent = item.meaning || '—';
-        const rootsEl = el('div', 'text-xs mt-auto pt-2 small-muted'); rootsEl.innerHTML = `<strong>Roots:</strong> ${item.roots || '—'}`;
+
+        const rootsEl = el('div', 'text-xs mt-auto pt-2 small-muted');
+        const rootsLabel = el('strong');
+        rootsLabel.textContent = 'Roots: ';
+        rootsEl.append(rootsLabel, item.roots || '—');
+
         const actions = el('div', 'flex flex-wrap gap-2 mt-2');
-        actions.innerHTML = `<button class="chip" data-action="copy-name" data-name="${item.name}" aria-label="Copy name">Copy</button><button class="chip thumb-btn ${isLiked ? 'active' : ''}" data-action="thumb-up" data-name="${item.name}" aria-label="Like name">👍</button><button class="chip thumb-btn ${isDisliked ? 'active' : ''}" data-action="thumb-down" data-name="${item.name}" aria-label="Blacklist name">👎</button>`;
+
+        const copyBtn = el('button', 'chip');
+        copyBtn.dataset.action = 'copy-name';
+        copyBtn.dataset.name = item.name;
+        copyBtn.ariaLabel = 'Copy name';
+        copyBtn.textContent = 'Copy';
+
+        const thumbUp = el('button', `chip thumb-btn ${isLiked ? 'active' : ''}`);
+        thumbUp.dataset.action = 'thumb-up';
+        thumbUp.dataset.name = item.name;
+        thumbUp.ariaLabel = 'Like name';
+        thumbUp.textContent = '👍';
+
+        const thumbDown = el('button', `chip thumb-btn ${isDisliked ? 'active' : ''}`);
+        thumbDown.dataset.action = 'thumb-down';
+        thumbDown.dataset.name = item.name;
+        thumbDown.ariaLabel = 'Blacklist name';
+        thumbDown.textContent = '👎';
+
+        actions.append(copyBtn, thumbUp, thumbDown);
         card.append(meaningEl, rootsEl, actions);
     } else {
         const statusColor = item.valid ? 'text-green-400' : 'text-yellow-400';
         const validation = el('div', 'text-xs');
-        validation.innerHTML = `<strong>Validation:</strong> <span class="${statusColor}">${item.valid ? 'Pass' : 'Approximate'}</span>`;
+
+        const valLabel = el('strong');
+        valLabel.textContent = 'Validation: ';
+        const valStatus = el('span', statusColor);
+        valStatus.textContent = item.valid ? 'Pass' : 'Approximate';
+        validation.append(valLabel, valStatus);
+
         if (item.semanticCheck !== 'Pass') {
-        validation.innerHTML += `<br><strong>Semantic Note:</strong> <span class="text-yellow-400">${item.semanticCheck}</span>`;
+            validation.append(el('br'));
+            const semLabel = el('strong');
+            semLabel.textContent = 'Semantic Note: ';
+            const semNote = el('span', 'text-yellow-400');
+            semNote.textContent = item.semanticCheck;
+            validation.append(semLabel, semNote);
         }
+
         const pronunciations = el('div', 'flex flex-col gap-1 mt-2 text-sm');
-        item.pronunciations?.forEach(p => pronunciations.insertAdjacentHTML('beforeend', `<div><strong>${p.lang}:</strong> <span class="italic small-muted">/${p.phonetic}/</span></div>`));
+        item.pronunciations?.forEach(p => {
+            const pDiv = el('div');
+            const pLang = el('strong');
+            pLang.textContent = `${p.lang}: `;
+            const pPhon = el('span', 'italic small-muted');
+            pPhon.textContent = `/${p.phonetic}/`;
+            pDiv.append(pLang, pPhon);
+            pronunciations.append(pDiv);
+        });
+
         const actions = el('div', 'flex flex-wrap gap-2 mt-2');
-        actions.innerHTML = `<button class="chip" data-action="copy-name" data-name="${item.name}" aria-label="Copy name">Copy</button>`;
+        const copyBtn = el('button', 'chip');
+        copyBtn.dataset.action = 'copy-name';
+        copyBtn.dataset.name = item.name;
+        copyBtn.ariaLabel = 'Copy name';
+        copyBtn.textContent = 'Copy';
+        actions.append(copyBtn);
+
         card.append(validation, pronunciations, actions);
     }
     return card;
