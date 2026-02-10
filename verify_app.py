@@ -6,8 +6,12 @@ def run(playwright):
     context = browser.new_context()
     page = context.new_page()
 
+    # Abort external requests to avoid timeouts in environment without internet
+    page.route("https://cdn.tailwindcss.com", lambda route: route.abort())
+    page.route("https://fonts.googleapis.com/**", lambda route: route.abort())
+
     # Load the page
-    page.goto("http://localhost:8000/index.html")
+    page.goto("http://127.0.0.1:8000/index.html", wait_until="domcontentloaded")
 
     # Wait for the Welcome Modal and click "Use without API" to dismiss it
     # Because it blocks the Settings button
@@ -32,16 +36,17 @@ def run(playwright):
         print("Gemini 1.5 Flash NOT found")
 
     # Take screenshot of settings
-    if not os.path.exists("/home/jules/verification"):
-        os.makedirs("/home/jules/verification")
-    page.screenshot(path="/home/jules/verification/settings.png")
+    screenshot_dir = "verification"
+    if not os.path.exists(screenshot_dir):
+        os.makedirs(screenshot_dir)
+    page.screenshot(path=os.path.join(screenshot_dir, "settings.png"))
 
     # Close settings
     page.click("text=Close")
 
     # Verify History Modal
     page.click("text=History")
-    page.screenshot(path="/home/jules/verification/history.png")
+    page.screenshot(path=os.path.join(screenshot_dir, "history.png"))
 
     browser.close()
 
