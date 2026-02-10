@@ -1,4 +1,4 @@
-import { appState, loadState, debouncedSaveState } from './state.js';
+import { appState, loadState, debouncedSaveState, logError } from './state.js';
 import { ui, initLayout, updateControls, updateResultsPanel, setGenerateHandler, toggleModal } from './ui.js';
 import { geminiService } from './api.js';
 import { showToast } from './utils.js';
@@ -72,9 +72,7 @@ function parseApiResponse(text) {
           console.warn("Cleanup parse failed:", e2);
       }
 
-      if (!appState.recentErrors) appState.recentErrors = [];
-      appState.recentErrors.push(`${new Date().toLocaleTimeString()}: Failed to parse API response`);
-      if (appState.recentErrors.length > 5) appState.recentErrors.shift();
+      logError("Failed to parse API response");
       return [];
     }
 }
@@ -212,8 +210,7 @@ async function doGenerate() {
         }
         appState.error = errorMsg;
 
-        if (!appState.recentErrors) appState.recentErrors = [];
-        appState.recentErrors.push(`${new Date().toLocaleTimeString()}: ${errorMsg}`);
+        logError(errorMsg);
     } finally {
         clearTimeout(timeoutId);
         appState.isLoading = false;
