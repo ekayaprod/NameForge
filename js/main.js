@@ -52,7 +52,19 @@ function parseApiResponse(text) {
       return [];
     } catch (e) {
       console.warn("Direct JSON parse failed, attempting cleanup:", e);
-      let cleanedText = text.replace(/```[a-z]*\n?/gi, '').replace(/```/g, '').trim();
+      let cleanedText = text;
+      if (text.includes('```')) {
+          const startIdx = text.indexOf('```');
+          const lastIdx = text.lastIndexOf('```');
+          if (startIdx !== lastIdx && lastIdx > startIdx) {
+              const firstNewline = text.indexOf('\n', startIdx);
+              const contentStart = (firstNewline !== -1 && firstNewline < lastIdx) ? firstNewline + 1 : startIdx + 3;
+              cleanedText = text.substring(contentStart, lastIdx);
+          } else {
+              cleanedText = text.replace(/```[a-z]*\n?/gi, '').replace(/```/g, '');
+          }
+      }
+      cleanedText = cleanedText.trim();
       try {
           const parsed = JSON.parse(cleanedText);
           if (Array.isArray(parsed)) return parsed;
