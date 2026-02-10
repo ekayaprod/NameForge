@@ -81,17 +81,33 @@ function createContextInput(placeholder, stateKey, className = '') {
     return input;
 }
 
+let renderedCount = 0;
+let clusterGrids = {};
+let mainGrid = null;
+
 export function updateResultsPanel() {
-    ui.results.panel.innerHTML = '';
     if (appState.isLoading) {
-        ui.results.panel.innerHTML = `
+        if (!appState.results.length) {
+            ui.results.panel.innerHTML = `
         <div class="flex flex-col items-center justify-center py-8 gap-4">
             <div class="spinner"></div>
             <div class="text-sm small-muted">Crafting names...</div>
         </div>`;
-    } else if (appState.error) {
+        }
+        return;
+    }
+
+    if (appState.results.length < renderedCount || appState.results.length === 0) {
+        ui.results.panel.innerHTML = '';
+        renderedCount = 0;
+        clusterGrids = {};
+        mainGrid = null;
+    }
+
+    if (appState.error) {
         const escapedError = String(appState.error).replace(/</g, '&lt;');
         ui.results.panel.innerHTML = `<div class="bg-[#2b1a1a] border border-[#5b2626] rounded p-4"><div class="text-red-300 font-semibold">Error</div><div class="small-muted mt-2">${escapedError}</div></div>`;
+        return;
     } else if (!appState.results.length) {
         if (appState.rawApiResponse) {
             const escapedResponse = appState.rawApiResponse.replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -104,21 +120,32 @@ export function updateResultsPanel() {
         } else {
                 ui.results.panel.innerHTML = '<div class="flex-1 flex items-center justify-center small-muted h-full">No names yet — click Generate.</div>';
         }
-    } else {
-        const grid = el('div','grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2');
-        if (appState.mode === 'forge') {
-            const clusters = appState.results.reduce((acc, item) => ((acc[item.cluster] = acc[item.cluster] || []).push(item), acc), {});
-            Object.keys(clusters).sort().forEach(clusterName => {
-                ui.results.panel.insertAdjacentHTML('beforeend', `<h3 class="text-md font-semibold text-blue-300 mt-4 first:mt-0">${clusterName}</h3>`);
-                const clusterGrid = el('div','grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2');
-                clusters[clusterName].forEach(item => clusterGrid.append(createNameCard(item)));
-                ui.results.panel.append(clusterGrid);
-            });
-        } else {
-            appState.results.forEach(item => grid.append(createNameCard(item)));
-            ui.results.panel.append(grid);
-        }
+        return;
     }
+
+    const newItems = appState.results.slice(renderedCount);
+    if (newItems.length === 0) return;
+
+    if (appState.mode === 'forge') {
+        newItems.forEach(item => {
+            const clusterName = item.cluster || 'Misc';
+            let grid = clusterGrids[clusterName];
+            if (!grid) {
+                ui.results.panel.insertAdjacentHTML('beforeend', `<h3 class="text-md font-semibold text-blue-300 mt-4 first:mt-0">${clusterName}</h3>`);
+                grid = el('div','grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2');
+                ui.results.panel.append(grid);
+                clusterGrids[clusterName] = grid;
+            }
+            grid.append(createNameCard(item));
+        });
+    } else {
+        if (!mainGrid) {
+            mainGrid = el('div','grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2');
+            ui.results.panel.append(mainGrid);
+        }
+        newItems.forEach(item => mainGrid.append(createNameCard(item)));
+    }
+    renderedCount = appState.results.length;
 }
 
 export function updateControls() {

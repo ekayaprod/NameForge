@@ -173,7 +173,7 @@ async function doGenerate() {
     }
 
     appState.error = null;
-    appState.results = [];
+    // appState.results is not cleared here to allow accumulation
     appState.rawApiResponse = null;
     appState.isLoading = true;
     appState.generationController = new AbortController();
@@ -200,7 +200,7 @@ async function doGenerate() {
 
         if (allResults.length) {
             appState.sessionGeneratedNames.push(...allResults.map(p => p.name));
-            appState.results = allResults;
+            appState.results.push(...allResults);
         }
 
     } catch (error) {
