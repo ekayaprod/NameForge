@@ -126,12 +126,16 @@ export function updateControls() {
     if (appState.mode === 'forge') {
         updateChipSelector(ui.controls.themeChips, CONFIG.THEME_OPTIONS);
     }
-    let buttonText = "Generate Names";
-    if (appState.sessionGeneratedNames.length > 0 && !appState.isLoading) {
-        buttonText = "Generate More";
-    }
     if (ui.controls.generateButton) {
-        ui.controls.generateButton.textContent = buttonText;
+        if (appState.isLoading) {
+            ui.controls.generateButton.innerHTML = `<div class="flex items-center justify-center gap-2"><div class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div><span>Generating...</span></div>`;
+        } else {
+            let buttonText = "Generate Names";
+            if (appState.sessionGeneratedNames.length > 0) {
+                buttonText = "Generate More";
+            }
+            ui.controls.generateButton.textContent = buttonText;
+        }
     }
     updateGenerateButtonState();
 }
@@ -140,10 +144,18 @@ function updateGenerateButtonState() {
     const langRequirement = appState.selectedLanguages.length >= 2 && appState.selectedLanguages.length <= 3;
     const themeRequirement = appState.mode === 'forge' ? appState.selectedThemes.length >= 1 : true;
     const isReady = langRequirement && themeRequirement;
+
     if (ui.controls.generateButton) {
-        ui.controls.generateButton.disabled = !isReady;
-        ui.controls.generateButton.classList.toggle('opacity-50', !isReady);
-        ui.controls.generateButton.classList.toggle('cursor-not-allowed', !isReady);
+        if (appState.isLoading) {
+            ui.controls.generateButton.disabled = true;
+            ui.controls.generateButton.classList.remove('opacity-50', 'cursor-not-allowed');
+            ui.controls.generateButton.classList.add('opacity-75', 'cursor-wait');
+        } else {
+            ui.controls.generateButton.disabled = !isReady;
+            ui.controls.generateButton.classList.remove('opacity-75', 'cursor-wait');
+            ui.controls.generateButton.classList.toggle('opacity-50', !isReady);
+            ui.controls.generateButton.classList.toggle('cursor-not-allowed', !isReady);
+        }
     }
 }
 
@@ -190,7 +202,7 @@ function createNameCard(item) {
         const meaningEl = el('div', 'italic small-muted'); meaningEl.textContent = item.meaning || '—';
         const rootsEl = el('div', 'text-xs mt-auto pt-2 small-muted'); rootsEl.innerHTML = `<strong>Roots:</strong> ${item.roots || '—'}`;
         const actions = el('div', 'flex flex-wrap gap-2 mt-2');
-        actions.innerHTML = `<button class="chip" data-action="copy-name" data-name="${item.name}">Copy</button><button class="chip thumb-btn ${isLiked ? 'active' : ''}" data-action="thumb-up" data-name="${item.name}">👍</button><button class="chip thumb-btn ${isDisliked ? 'active' : ''}" data-action="thumb-down" data-name="${item.name}">👎</button>`;
+        actions.innerHTML = `<button class="chip" data-action="copy-name" data-name="${item.name}" aria-label="Copy name">Copy</button><button class="chip thumb-btn ${isLiked ? 'active' : ''}" data-action="thumb-up" data-name="${item.name}" aria-label="Like name">👍</button><button class="chip thumb-btn ${isDisliked ? 'active' : ''}" data-action="thumb-down" data-name="${item.name}" aria-label="Blacklist name">👎</button>`;
         card.append(meaningEl, rootsEl, actions);
     } else {
         const statusColor = item.valid ? 'text-green-400' : 'text-yellow-400';
@@ -202,7 +214,7 @@ function createNameCard(item) {
         const pronunciations = el('div', 'flex flex-col gap-1 mt-2 text-sm');
         item.pronunciations?.forEach(p => pronunciations.insertAdjacentHTML('beforeend', `<div><strong>${p.lang}:</strong> <span class="italic small-muted">/${p.phonetic}/</span></div>`));
         const actions = el('div', 'flex flex-wrap gap-2 mt-2');
-        actions.innerHTML = `<button class="chip" data-action="copy-name" data-name="${item.name}">Copy</button>`;
+        actions.innerHTML = `<button class="chip" data-action="copy-name" data-name="${item.name}" aria-label="Copy name">Copy</button>`;
         card.append(validation, pronunciations, actions);
     }
     return card;
