@@ -1,7 +1,7 @@
 import { CONFIG } from './config.js';
 import { debounce } from './utils.js';
 
-export const appState = {
+export const getDefaultState = () => ({
   version: CONFIG.APP_VERSION,
   mode: 'forge',
   harmonizerIsAllLanguages: false,
@@ -30,7 +30,9 @@ export const appState = {
   apiTimeout: 60,
   maxOutputTokens: 1024,
   parallelMode: false,
-};
+});
+
+export const appState = getDefaultState();
 
 export function saveState() {
   try {
@@ -46,24 +48,7 @@ export function loadState() {
       const saved = localStorage.getItem(`nameForgeState_v${CONFIG.APP_VERSION}`);
       if (saved) {
           const parsed = JSON.parse(saved);
-          const defaults = {
-              version: CONFIG.APP_VERSION,
-              mode: 'forge',
-              harmonizerIsAllLanguages: false,
-              likedNames: [],
-              userLanguages: [],
-              userBlacklist: [],
-              gender: "Unisex",
-              outputAlphabet: "English (Default)",
-              model: "models/gemini-1.5-flash",
-              recentErrors: [],
-              hasSeenIntro: false,
-              defaultCount: 6,
-              apiTimeout: 60,
-              maxOutputTokens: 1024,
-              parallelMode: false,
-          };
-          Object.assign(appState, defaults, parsed);
+          Object.assign(appState, getDefaultState(), parsed);
       }
     } catch (e) { console.warn("Could not load state:", e); }
 }
