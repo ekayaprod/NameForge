@@ -62,60 +62,54 @@ export class GeminiService {
       body.systemInstruction = { parts: [{ text: systemInstructionText }] };
     }
 
-    try {
-      const response = await fetch(
-        `${CONFIG.API_BASE_URL}${this.model}:generateContent?key=${this.apiKey}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body),
-          signal
-        }
-      );
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        let errorMsg = `API Error ${response.status}`;
-        try {
-            const errJson = JSON.parse(errorText);
-            if (errJson.error?.message) errorMsg = errJson.error.message;
-        } catch(e) {}
-        throw new Error(errorMsg);
+    const response = await fetch(
+      `${CONFIG.API_BASE_URL}${this.model}:generateContent?key=${this.apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+        signal
       }
+    );
 
-      const data = await response.json();
-
-      // Check for safety blocking
-      if (data.promptFeedback?.blockReason) {
-        throw new Error(`Request blocked: ${data.promptFeedback.blockReason}`);
-      }
-
-      const candidate = data.candidates?.[0];
-      if (!candidate) {
-         throw new Error("No content generated.");
-      }
-
-      if (candidate.finishReason && !['STOP', 'MAX_TOKENS'].includes(candidate.finishReason)) {
-          throw new Error(`Generation stopped: ${candidate.finishReason}`);
-      }
-
-      const responseText = candidate.content?.parts?.[0]?.text || "";
-
-      // Update History
-      this.history.push({ role: "user", parts: [{ text: userPrompt }] });
-      this.history.push({ role: "model", parts: [{ text: responseText }] });
-
-      // Prune history if too long to save tokens (keep last 20 turns)
-      if (this.history.length > 20) {
-          this.history = this.history.slice(this.history.length - 20);
-      }
-
-      return responseText;
-
-    } catch (error) {
-      // Re-throw to be handled by the caller
-      throw error;
+    if (!response.ok) {
+      const errorText = await response.text();
+      let errorMsg = `API Error ${response.status}`;
+      try {
+          const errJson = JSON.parse(errorText);
+          if (errJson.error?.message) errorMsg = errJson.error.message;
+      } catch(e) {}
+      throw new Error(errorMsg);
     }
+
+    const data = await response.json();
+
+    // Check for safety blocking
+    if (data.promptFeedback?.blockReason) {
+      throw new Error(`Request blocked: ${data.promptFeedback.blockReason}`);
+    }
+
+    const candidate = data.candidates?.[0];
+    if (!candidate) {
+       throw new Error("No content generated.");
+    }
+
+    if (candidate.finishReason && !['STOP', 'MAX_TOKENS'].includes(candidate.finishReason)) {
+        throw new Error(`Generation stopped: ${candidate.finishReason}`);
+    }
+
+    const responseText = candidate.content?.parts?.[0]?.text || "";
+
+    // Update History
+    this.history.push({ role: "user", parts: [{ text: userPrompt }] });
+    this.history.push({ role: "model", parts: [{ text: responseText }] });
+
+    // Prune history if too long to save tokens (keep last 20 turns)
+    if (this.history.length > 20) {
+        this.history = this.history.slice(this.history.length - 20);
+    }
+
+    return responseText;
   }
 }
 
