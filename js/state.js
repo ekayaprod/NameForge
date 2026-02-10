@@ -31,13 +31,28 @@ export const appState = {
   maxOutputTokens: 1024,
 };
 
+let idleHandle = null;
+let timeoutHandle = null;
+
 export function saveState() {
-  try {
+  const performSave = () => {
+    try {
       const stateToSave = { ...appState };
       // Don't save transient state
       ['isLoading', 'error', 'rawApiResponse', 'generationController'].forEach(key => delete stateToSave[key]);
       localStorage.setItem(`nameForgeState_v${CONFIG.APP_VERSION}`, JSON.stringify(stateToSave));
-  } catch (e) { console.warn("Could not save state:", e); }
+    } catch (e) { console.warn("Could not save state:", e); }
+    idleHandle = null;
+    timeoutHandle = null;
+  };
+
+  if (typeof window !== 'undefined' && window.requestIdleCallback) {
+    if (idleHandle) window.cancelIdleCallback(idleHandle);
+    idleHandle = window.requestIdleCallback(performSave);
+  } else {
+    if (timeoutHandle) clearTimeout(timeoutHandle);
+    timeoutHandle = setTimeout(performSave, 0);
+  }
 }
 
 export function loadState() {
