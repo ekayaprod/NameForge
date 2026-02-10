@@ -570,7 +570,6 @@ export function initLayout() {
         createNumericInputControl('API Timeout (seconds)', 'apiTimeout', 10, 120, 5),
         createNumericInputControl('Max Output Tokens', 'maxOutputTokens', 800, 4000, 100)
     );
-    // Removed parallel toggle as it doesn't work well with stateful chat
     const settingsCloseBtn = el('button', 'chip bg-blue-800/50 justify-center');
     settingsCloseBtn.textContent = 'Close';
     settingsCloseBtn.addEventListener('click', () => toggleModal(ui.modals.settings, false));
