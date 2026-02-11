@@ -23,9 +23,13 @@ Find existing, valid names that work across multiple cultures.
 - **Customizable:** Adjust strictness, gender, and output character sets.
 - **Privacy:** Your API key is stored locally in your browser.
 
-## usage
+## Usage
 
-1.  **Open the App:** Simply open `index.html` in your web browser. No server required!
+1.  **Run a Server:** Because this project uses ES Modules, you must run a local server.
+    ```bash
+    python3 -m http.server 8000
+    # Then open http://localhost:8000
+    ```
 2.  **Enter API Key:** You will need a free Google Gemini API key. [Get one here](https://ai.google.dev/gemini-api/docs/api-key).
 3.  **Start Forging:**
     -   Select your mode (Forge or Harmonizer).
@@ -38,3 +42,8 @@ Find existing, valid names that work across multiple cultures.
 -   **Styling:** Tailwind CSS (via CDN).
 -   **API:** Google Gemini API (REST).
 -   **State:** LocalStorage for persistence.
+
+## Development
+
+-   **Unit Tests:** Run `./verify_tests.sh` to execute the Node.js test runner.
+-   **Verification:** Run `python3 verify_app.py` to perform end-to-end checks (requires Playwright).
