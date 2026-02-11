@@ -69,16 +69,26 @@ function createNumericInputControl(label, stateKey, min, max, step) {
     return createControlSection(label, input);
 }
 
-function createContextInput(placeholder, stateKey, className = '') {
-    const input = el('input', `w-full bg-[#0b1622] border border-[#223447] rounded px-3 py-2 text-sm ${className}`);
-    input.placeholder = placeholder;
+function createContextInput(labelText, stateKey, containerClass = '') {
+    const container = el('div', containerClass);
+
+    const label = el('label', 'block text-xs text-gray-400 font-medium mb-1 ml-0.5');
+    label.textContent = labelText;
+    const inputId = `input-${stateKey}`;
+    label.htmlFor = inputId;
+
+    const input = el('input', 'w-full bg-[#0b1622] border border-[#223447] rounded px-3 py-2 text-sm');
+    input.id = inputId;
+    input.placeholder = labelText;
     input.value = appState[stateKey];
     input.addEventListener('input', e => {
         appState[stateKey] = e.target.value.trim();
         updateControls();
         debouncedSaveState();
     });
-    return input;
+
+    container.append(label, input);
+    return container;
 }
 
 export function updateResultsPanel() {
