@@ -8,11 +8,20 @@ export class GeminiService {
     this.lastContextHash = ""; // To detect if we need to reset history
   }
 
+  /**
+   * Configures the service with the user's API key and preferred model.
+   * @param {string} apiKey - The Google Gemini API key.
+   * @param {string} model - The model identifier (e.g., 'models/gemini-1.5-flash').
+   */
   configure(apiKey, model) {
     this.apiKey = apiKey;
     this.model = model;
   }
 
+  /**
+   * Clears the conversation history to start a fresh context.
+   * Useful when switching modes or changing significant settings.
+   */
   resetHistory() {
     this.history = [];
     this.lastContextHash = "";
