@@ -28,6 +28,14 @@ function createControlSection(label, controlElement) {
     const labelEl = el('label', 'text-sm font-medium');
     labelEl.textContent = label;
     controlElement.classList.add('mt-1');
+
+    if (['INPUT', 'SELECT', 'TEXTAREA'].includes(controlElement.tagName)) {
+        if (!controlElement.id) {
+            controlElement.id = `ctrl-${Math.random().toString(36).substr(2, 9)}`;
+        }
+        labelEl.htmlFor = controlElement.id;
+    }
+
     section.append(labelEl, controlElement);
     return section;
 }
@@ -484,6 +492,7 @@ function createControlsPanel() {
     const addLangWrap = el('div', 'flex gap-2 mt-2');
     const langInput = el('input', 'w-full bg-[#0b1622] border border-[#223447] rounded px-3 py-2 text-sm');
     langInput.placeholder = 'Add a language...';
+    langInput.setAttribute('aria-label', 'Add a custom language');
     const addLangBtn = el('button', 'bg-[#0e2436] border border-[#1b3146] px-3 py-2 rounded text-sm small-muted');
     addLangBtn.textContent = 'Add';
     addLangBtn.addEventListener('click', () => {
