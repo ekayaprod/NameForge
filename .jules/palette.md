@@ -1,0 +1,3 @@
+## 2026-02-12 - Automated Form Accessibility in Helper Functions
+**Learning:** When using helper functions to generate form controls (like `createControlSection`), manually adding `id` and `for` attributes is often forgotten. By enforcing this logic within the helper function itself (checking `tagName` and auto-generating IDs), we can guarantee accessibility compliance across the entire app without relying on individual implementation discipline.
+**Action:** In future projects, build accessibility primitives into the base UI components/factories rather than treating them as a per-instance requirement.
