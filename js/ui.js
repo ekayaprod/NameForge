@@ -31,7 +31,7 @@ function createControlSection(label, controlElement) {
 
     if (['INPUT', 'SELECT', 'TEXTAREA'].includes(controlElement.tagName)) {
         if (!controlElement.id) {
-            controlElement.id = `ctrl-${Math.random().toString(36).substr(2, 9)}`;
+            controlElement.id = `ctrl-${Math.random().toString(36).substring(2, 11)}`;
         }
         labelEl.htmlFor = controlElement.id;
     }
