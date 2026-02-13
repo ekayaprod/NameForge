@@ -183,6 +183,7 @@ function updateLanguageChips() {
 
     appState.selectedLanguages.forEach(opt => {
         const c = el('button', 'chip active');
+        c.setAttribute('aria-pressed', 'true');
         c.dataset.option = opt;
         let content = opt;
         c.innerHTML = content;
@@ -191,6 +192,7 @@ function updateLanguageChips() {
 
     allLangs.filter(opt => !appState.selectedLanguages.includes(opt)).forEach(opt => {
         const c = el('button', 'chip');
+        c.setAttribute('aria-pressed', 'false');
         c.textContent = opt;
         c.dataset.option = opt;
         ui.controls.languageChips.append(c);
@@ -201,7 +203,9 @@ function updateChipSelector(container, options) {
     container.innerHTML = '';
     options.forEach(opt => {
         const c = el('button', 'chip'); c.textContent = opt; c.dataset.option = opt;
-        if (appState[container.dataset.stateKey]?.includes(opt)) c.classList.add('active');
+        const isActive = appState[container.dataset.stateKey]?.includes(opt);
+        if (isActive) c.classList.add('active');
+        c.setAttribute('aria-pressed', isActive ? 'true' : 'false');
         container.append(c);
     });
 }
@@ -495,16 +499,30 @@ function createControlsPanel() {
     langInput.setAttribute('aria-label', 'Add a custom language');
     const addLangBtn = el('button', 'bg-[#0e2436] border border-[#1b3146] px-3 py-2 rounded text-sm small-muted');
     addLangBtn.textContent = 'Add';
-    addLangBtn.addEventListener('click', () => {
+
+    const handleAddLang = () => {
         const newLang = langInput.value.trim();
         if (newLang.length < 2) return;
-        if (newLang && ![...CONFIG.LANG_OPTIONS, ...appState.userLanguages].map(l=>l.toLowerCase()).includes(newLang.toLowerCase())) {
-            appState.userLanguages.push(newLang);
-            if(appState.selectedLanguages.length < 3) appState.selectedLanguages.push(newLang);
-            debouncedSaveState(); updateControls();
+
+        const allLangs = [...CONFIG.LANG_OPTIONS, ...appState.userLanguages].map(l => l.toLowerCase());
+        if (allLangs.includes(newLang.toLowerCase())) {
+            showToast('Language already exists.', true);
+            return;
         }
+
+        appState.userLanguages.push(newLang);
+        if (appState.selectedLanguages.length < 3) appState.selectedLanguages.push(newLang);
+        debouncedSaveState();
+        updateControls();
         langInput.value = '';
+        showToast(`Added ${newLang}!`);
+    };
+
+    addLangBtn.addEventListener('click', handleAddLang);
+    langInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') handleAddLang();
     });
+
     addLangWrap.append(langInput, addLangBtn);
     languagesSection.append(ui.controls.languageChips, addLangWrap);
 
