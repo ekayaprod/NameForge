@@ -18,11 +18,12 @@ This document tracks the progress of the NameForge project.
 - [x] **Pronunciation**: Phonetic breakdowns.
 - [x] **Session History**: Track generated names with persistence.
 - [x] **Privacy**: Local storage of API keys.
+- [x] **Export**: Export generated names to JSON.
 
 ## 🚧 In Progress
 - [ ] (No active tasks currently tracked)
 
 ## 🔮 Future Ideas
-- [ ] Export generated names to CSV/JSON.
 - [ ] Shareable name lists.
 - [ ] More themes and styles.
+- [ ] Export generated names to CSV.
