@@ -3,45 +3,7 @@ import { ui, initLayout, updateControls, updateResultsPanel, setGenerateHandler,
 import { geminiService } from './api.js';
 import { showToast } from './utils.js';
 import { CONFIG } from './config.js';
-
-// --- Schemas ---
-const FORGE_SCHEMA = {
-  type: "ARRAY",
-  items: {
-    type: "OBJECT",
-    properties: {
-      name: { type: "STRING" },
-      roots: { type: "STRING" },
-      meaning: { type: "STRING" },
-      cluster: { type: "STRING" }
-    },
-    required: ["name", "roots", "meaning", "cluster"]
-  }
-};
-
-const HARMONIZER_SCHEMA = {
-  type: "ARRAY",
-  items: {
-    type: "OBJECT",
-    properties: {
-      name: { type: "STRING" },
-      valid: { type: "BOOLEAN" },
-      pronunciations: {
-        type: "ARRAY",
-        items: {
-          type: "OBJECT",
-          properties: {
-            lang: { type: "STRING" },
-            phonetic: { type: "STRING" }
-          },
-          required: ["lang", "phonetic"]
-        }
-      },
-      semanticCheck: { type: "STRING" }
-    },
-    required: ["name", "valid", "pronunciations", "semanticCheck"]
-  }
-};
+import { FORGE_SCHEMA, HARMONIZER_SCHEMA } from './schemas.js';
 
 // --- Helpers ---
 
