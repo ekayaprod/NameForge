@@ -1,0 +1,125 @@
+import { ui } from './state.js';
+import { appState, debouncedSaveState } from '../state.js';
+import { CONFIG } from '../config.js';
+import { updateControls, updateResultsPanel } from './render.js';
+import { showToast } from '../utils.js';
+
+export function handleCopyAll() {
+    if (!appState.results.length) { showToast('No results to copy.', true); return; }
+    const text = appState.results.map(r => {
+        if (appState.mode === 'forge') return `${r.name} - ${r.meaning}`;
+        return `${r.name} (${r.valid ? 'Valid' : 'Approx'})`;
+    }).join('\n');
+    navigator.clipboard.writeText(text);
+    showToast('All names copied!');
+}
+
+export function handleExport() {
+    if (!appState.results.length) { showToast('No results to export.', true); return; }
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appState.results, null, 2));
+    const downloadAnchorNode = document.createElement('a');
+    downloadAnchorNode.setAttribute("href", dataStr);
+    downloadAnchorNode.setAttribute("download", `nameforge_export_${Date.now()}.json`);
+    document.body.appendChild(downloadAnchorNode); // required for firefox
+    downloadAnchorNode.click();
+    downloadAnchorNode.remove();
+}
+
+export function handleSurpriseMe() {
+    // Random Languages (2 or 3)
+    const numLangs = Math.random() > 0.5 ? 2 : 3;
+    const shuffledLangs = [...CONFIG.LANG_OPTIONS].sort(() => 0.5 - Math.random());
+    appState.selectedLanguages = shuffledLangs.slice(0, numLangs);
+
+    // Random Themes (1 or 2) - only if in Forge mode
+    if (appState.mode === 'forge') {
+        const numThemes = Math.random() > 0.7 ? 2 : 1;
+        const shuffledThemes = [...CONFIG.THEME_OPTIONS].sort(() => 0.5 - Math.random());
+        appState.selectedThemes = shuffledThemes.slice(0, numThemes);
+    }
+
+    showToast('🎲 Randomized selections!');
+    debouncedSaveState();
+    updateControls();
+}
+
+export function handleControlsClick(event) {
+    const chip = event.target.closest('.chip[data-option]');
+    if (chip) {
+        const { option } = chip.dataset;
+        const parentContainer = chip.parentElement;
+        const stateKey = parentContainer.dataset.stateKey;
+        if (!stateKey) return;
+
+        const currentValue = appState[stateKey] || [];
+        const max = stateKey === 'selectedLanguages' ? 3 : 2;
+
+        if (currentValue.includes(option)) {
+            appState[stateKey] = currentValue.filter(x => x !== option);
+        } else {
+            if (currentValue.length >= max) {
+                appState[stateKey] = [...currentValue.slice(1), option];
+            } else {
+                appState[stateKey] = [...currentValue, option];
+            }
+        }
+
+        debouncedSaveState();
+        updateControls();
+    }
+}
+
+export function handleFeedback(name, isThumbUp) {
+    const nameLower = name.toLowerCase();
+    const isLiked = appState.likedNames.some(n => n.name === name);
+    const isDisliked = appState.userBlacklist.includes(nameLower);
+
+    if (isThumbUp) {
+        if (isLiked) {
+            appState.likedNames = appState.likedNames.filter(n => n.name !== name);
+            showToast('Unliked!');
+        } else {
+            const nameObj = appState.results.find(r => r.name === name) || { name };
+            if (nameObj) appState.likedNames.push(nameObj);
+            if (isDisliked) appState.userBlacklist = appState.userBlacklist.filter(w => w !== nameLower);
+            showToast('Liked!');
+        }
+    } else { // Thumb Down
+        if (!isDisliked) {
+            appState.userBlacklist.push(nameLower);
+            if (isLiked) appState.likedNames = appState.likedNames.filter(n => n.name !== name);
+            appState.results = appState.results.filter(item => item.name.toLowerCase() !== nameLower);
+            updateResultsPanel();
+            showToast('Blacklisted & removed!');
+        }
+    }
+
+    debouncedSaveState();
+    updateControls();
+    const card = ui.results.panel.querySelector(`[data-name-card="${name}"]`);
+    if (card) {
+        const upBtn = card.querySelector('[data-action="thumb-up"]');
+        const downBtn = card.querySelector('[data-action="thumb-down"]');
+        if (upBtn) upBtn.classList.toggle('active', appState.likedNames.some(n => n.name === name));
+        if (downBtn) downBtn.classList.toggle('active', appState.userBlacklist.includes(nameLower));
+    }
+}
+
+export function handleResultsPanelClick(event) {
+    const btn = event.target.closest('button[data-action]');
+    if (!btn) return;
+    const { action, name } = btn.dataset;
+
+    switch (action) {
+        case 'copy-name':
+        navigator.clipboard.writeText(name);
+        showToast('Copied!');
+        break;
+        case 'thumb-up':
+        handleFeedback(name, true);
+        break;
+        case 'thumb-down':
+        handleFeedback(name, false);
+        break;
+    }
+}
