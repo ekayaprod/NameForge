@@ -1,7 +1,7 @@
 import { appState, loadState, debouncedSaveState, logError } from './state.js';
 import { ui, initLayout, updateControls, updateResultsPanel, setGenerateHandler, toggleModal } from './ui/index.js';
 import { geminiService } from './api.js';
-import { showToast } from './utils.js';
+import { showToast } from './ui/toast.js';
 import { CONFIG } from './config.js';
 import { FORGE_SCHEMA, HARMONIZER_SCHEMA } from './schemas.js';
 

@@ -1,4 +1,4 @@
-import { el } from '../utils.js';
+import { el, debounce } from '../utils.js';
 import { appState, debouncedSaveState } from '../state.js';
 import { CONFIG } from '../config.js';
 
@@ -68,9 +68,11 @@ export function createContextInput(labelText, stateKey, onInput, containerClass 
     input.id = inputId;
     input.placeholder = labelText;
     input.value = appState[stateKey];
+
+    const debouncedOnInput = onInput ? debounce(onInput, 300) : null;
     input.addEventListener('input', e => {
         appState[stateKey] = e.target.value.trim();
-        if (onInput) onInput(e);
+        if (debouncedOnInput) debouncedOnInput(e);
         debouncedSaveState();
     });
 

@@ -1,7 +1,8 @@
 import { ui, getGenerateHandler } from './state.js';
 import { appState, debouncedSaveState } from '../state.js';
 import { CONFIG } from '../config.js';
-import { el, showToast } from '../utils.js';
+import { el } from '../utils.js';
+import { showToast } from './toast.js';
 import { geminiService } from '../api.js';
 import {
     createControlSection,

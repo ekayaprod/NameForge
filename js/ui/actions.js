@@ -2,16 +2,20 @@ import { ui } from './state.js';
 import { appState, debouncedSaveState } from '../state.js';
 import { CONFIG } from '../config.js';
 import { updateControls, updateResultsPanel } from './render.js';
-import { showToast } from '../utils.js';
+import { showToast } from './toast.js';
 
-export function handleCopyAll() {
+export async function handleCopyAll() {
     if (!appState.results.length) { showToast('No results to copy.', true); return; }
     const text = appState.results.map(r => {
         if (appState.mode === 'forge') return `${r.name} - ${r.meaning}`;
         return `${r.name} (${r.valid ? 'Valid' : 'Approx'})`;
     }).join('\n');
-    navigator.clipboard.writeText(text);
-    showToast('All names copied!');
+    try {
+        await navigator.clipboard.writeText(text);
+        showToast('All names copied!');
+    } catch (err) {
+        showToast('Failed to copy to clipboard', true);
+    }
 }
 
 export function handleExport() {
@@ -105,15 +109,19 @@ export function handleFeedback(name, isThumbUp) {
     }
 }
 
-export function handleResultsPanelClick(event) {
+export async function handleResultsPanelClick(event) {
     const btn = event.target.closest('button[data-action]');
     if (!btn) return;
     const { action, name } = btn.dataset;
 
     switch (action) {
         case 'copy-name':
-        navigator.clipboard.writeText(name);
-        showToast('Copied!');
+        try {
+            await navigator.clipboard.writeText(name);
+            showToast('Copied!');
+        } catch (err) {
+            showToast('Failed to copy', true);
+        }
         break;
         case 'thumb-up':
         handleFeedback(name, true);
