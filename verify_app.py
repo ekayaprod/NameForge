@@ -39,6 +39,22 @@ def run(playwright):
     # Close settings
     page.click("text=Close")
 
+    # Verify Mode Switching (Forge -> Harmonizer)
+    print("Checking Forge mode...")
+    assert page.is_visible("button[data-mode='forge'].active")
+
+    print("Switching to Harmonizer mode...")
+    page.click("button[data-mode='harmonizer']")
+
+    # Verify switch
+    page.wait_for_selector("button[data-mode='harmonizer'].active")
+    assert page.is_visible("text=Harmonized Names")
+
+    # Switch back to Forge mode for consistency
+    print("Switching back to Forge mode...")
+    page.click("button[data-mode='forge']")
+    page.wait_for_selector("button[data-mode='forge'].active")
+
     # Verify History Modal
     page.click("text=History")
     page.screenshot(path="/home/jules/verification/history.png")
