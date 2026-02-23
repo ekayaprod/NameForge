@@ -27,3 +27,56 @@ export const debounce = (func, delay) => {
   };
 };
 
+/**
+ * Extracts complete JSON objects from a string that represents a partial or complete JSON array.
+ * Robustly handles prefixes like `[` and delimiters like `,`.
+ *
+ * @param {string} text - The accumulated text which contains a JSON array.
+ * @returns {Array<Object>} - An array of parsed objects found in the text.
+ */
+export function extractJsonObjects(text) {
+    const results = [];
+    let bracketCount = 0;
+    let start = -1;
+    let inString = false;
+    let escape = false;
+
+    for (let i = 0; i < text.length; i++) {
+        const char = text[i];
+
+        if (escape) {
+            escape = false;
+            continue;
+        }
+
+        if (char === '\\') {
+            escape = true;
+            continue;
+        }
+
+        if (char === '"') {
+            inString = !inString;
+            continue;
+        }
+
+        if (inString) continue;
+
+        if (char === '{') {
+            if (bracketCount === 0) start = i;
+            bracketCount++;
+        } else if (char === '}') {
+            bracketCount--;
+            if (bracketCount === 0 && start !== -1) {
+                const jsonStr = text.substring(start, i + 1);
+                try {
+                    const obj = JSON.parse(jsonStr);
+                    results.push(obj);
+                } catch (e) {
+                    // Ignore invalid JSON
+                }
+                start = -1;
+            }
+        }
+    }
+    return results;
+}

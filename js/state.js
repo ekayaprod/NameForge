@@ -9,6 +9,7 @@ export const appState = {
   isLoading: false,
   error: null,
   results: [],
+  renderedCount: 0,
   likedNames: [],
   selectedLanguages: ["Spanish", "Irish"],
   selectedThemes: ["Light","Balance"],
@@ -39,7 +40,7 @@ export function saveState() {
     try {
       const stateToSave = { ...appState };
       // Don't save transient state
-      ['isLoading', 'error', 'rawApiResponse', 'generationController'].forEach(key => delete stateToSave[key]);
+      ['isLoading', 'error', 'rawApiResponse', 'generationController', 'renderedCount'].forEach(key => delete stateToSave[key]);
       localStorage.setItem(`nameForgeState_v${CONFIG.APP_VERSION}`, JSON.stringify(stateToSave));
     } catch (e) { console.warn("Could not save state:", e); }
     idleHandle = null;
