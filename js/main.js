@@ -4,6 +4,7 @@ import { geminiService } from './api.js';
 import { showToast } from './ui/toast.js';
 import { CONFIG } from './config.js';
 import { FORGE_SCHEMA, HARMONIZER_SCHEMA } from './schemas.js';
+import { extractJsonObjects } from './utils.js';
 
 // --- Helpers ---
 
@@ -135,8 +136,9 @@ async function doGenerate() {
 
     appState.error = null;
     appState.results = [];
-    appState.rawApiResponse = null;
+    appState.rawApiResponse = "";
     appState.isLoading = true;
+    appState.renderedCount = 0;
     appState.generationController = new AbortController();
     updateResultsPanel();
     updateControls(); // update button text
@@ -150,21 +152,35 @@ async function doGenerate() {
     try {
         const schema = appState.mode === 'forge' ? FORGE_SCHEMA : HARMONIZER_SCHEMA;
 
-        // Serial Request (Chat)
-        const responseText = await geminiService.generate(userPrompt, systemInstr, contextHash, {
+        const stream = geminiService.streamGenerate(userPrompt, systemInstr, contextHash, {
             maxOutputTokens: appState.maxOutputTokens,
             responseSchema: schema
         }, appState.generationController.signal);
 
-        appState.rawApiResponse = responseText;
-        const allResults = processApiResponse(parseApiResponse(responseText));
+        let accumulatedText = "";
 
-        if (allResults.length) {
-            appState.sessionGeneratedNames.push(...allResults.map(p => p.name));
+        for await (const chunk of stream) {
+            try {
+                accumulatedText += chunk;
+                appState.rawApiResponse = accumulatedText;
+
+                const partialObjects = extractJsonObjects(accumulatedText);
+                const processed = processApiResponse(partialObjects);
+
+                if (processed.length > appState.results.length) {
+                    appState.results = processed;
+                    updateResultsPanel();
+                }
+            } catch (e) {
+                console.error("Error in stream loop:", e);
+            }
+        }
+
+        if (appState.results.length) {
+            appState.sessionGeneratedNames.push(...appState.results.map(p => p.name));
             if (appState.sessionGeneratedNames.length > CONFIG.MAX_SESSION_HISTORY) {
                 appState.sessionGeneratedNames = appState.sessionGeneratedNames.slice(-CONFIG.MAX_SESSION_HISTORY);
             }
-            appState.results = allResults;
         }
 
     } catch (error) {

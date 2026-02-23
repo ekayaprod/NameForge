@@ -6,6 +6,19 @@ import { createNameCard } from './components.js';
 import { geminiService } from '../api.js';
 import { handleCopyAll, handleExport } from './actions.js';
 
+// Inject animations
+const style = document.createElement('style');
+style.textContent = `
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in-up {
+  animation: fadeInUp 0.5s ease-out forwards;
+}
+`;
+document.head.appendChild(style);
+
 export function toggleModal(modal, show) {
     if (modal) {
         modal.style.display = show ? 'flex' : 'none';
@@ -13,43 +26,98 @@ export function toggleModal(modal, show) {
     }
 }
 
-export function updateResultsPanel() {
-    ui.results.panel.innerHTML = '';
-    if (appState.isLoading) {
-        ui.results.panel.innerHTML = `
-        <div class="flex flex-col items-center justify-center py-8 gap-4">
-            <div class="spinner"></div>
-            <div class="text-sm small-muted">Crafting names...</div>
-        </div>`;
-    } else if (appState.error) {
-        const escapedError = String(appState.error).replace(/</g, '&lt;');
-        ui.results.panel.innerHTML = `<div class="bg-[#2b1a1a] border border-[#5b2626] rounded p-4"><div class="text-red-300 font-semibold">Error</div><div class="small-muted mt-2">${escapedError}</div></div>`;
-    } else if (!appState.results.length) {
-        if (appState.rawApiResponse) {
-            const escapedResponse = appState.rawApiResponse.replace(/</g, '&lt;').replace(/>/g, '&gt;');
-            ui.results.panel.innerHTML = `
-                <div class="flex flex-col gap-3 p-2">
-                    <div class="font-semibold text-yellow-400">JSON Parsing Failed</div>
-                    <div class="small-muted">The API returned a response, but it was not in the expected JSON format. Here is the raw text from the model:</div>
-                    <pre class="w-full h-64 bg-[#0b1622] border border-[#223447] rounded p-2 text-xs font-mono overflow-auto">${escapedResponse}</pre>
-                </div>`;
-        } else {
-                ui.results.panel.innerHTML = '<div class="flex-1 flex items-center justify-center small-muted h-full">No names yet — click Generate.</div>';
+function appendResult(item) {
+    const card = createNameCard(item);
+    card.classList.add('animate-fade-in-up');
+
+    if (appState.mode === 'forge') {
+        const clusterName = (item.cluster || 'Misc').trim();
+        // Find existing cluster section by a data attribute we attach to the grid
+        // We look for a grid that corresponds to this cluster
+        let clusterGrid = Array.from(ui.results.panel.children).find(child => child.dataset?.cluster === clusterName);
+
+        if (!clusterGrid) {
+            // Create Header
+            const header = el('h3', 'text-md font-semibold text-blue-300 mt-4 first:mt-0');
+            header.textContent = clusterName;
+            ui.results.panel.append(header);
+
+            // Create Grid
+            clusterGrid = el('div', 'grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2');
+            clusterGrid.dataset.cluster = clusterName;
+            ui.results.panel.append(clusterGrid);
         }
+        clusterGrid.append(card);
     } else {
-        const grid = el('div','grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2');
-        if (appState.mode === 'forge') {
-            const clusters = appState.results.reduce((acc, item) => ((acc[item.cluster] = acc[item.cluster] || []).push(item), acc), {});
-            Object.keys(clusters).sort().forEach(clusterName => {
-                ui.results.panel.insertAdjacentHTML('beforeend', `<h3 class="text-md font-semibold text-blue-300 mt-4 first:mt-0">${clusterName}</h3>`);
-                const clusterGrid = el('div','grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2');
-                clusters[clusterName].forEach(item => clusterGrid.append(createNameCard(item)));
-                ui.results.panel.append(clusterGrid);
-            });
-        } else {
-            appState.results.forEach(item => grid.append(createNameCard(item)));
+        let grid = document.getElementById('results-grid');
+        if (!grid) {
+            grid = el('div', 'grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2');
+            grid.id = 'results-grid';
             ui.results.panel.append(grid);
         }
+        grid.append(card);
+    }
+}
+
+export function updateResultsPanel() {
+    // 1. Handle Reset/Clear or Error conditions where we wipe the panel
+    if (appState.results.length === 0) {
+        if (appState.isLoading) {
+            ui.results.panel.innerHTML = `
+            <div class="flex flex-col items-center justify-center py-8 gap-4" id="initial-loader">
+                <div class="spinner"></div>
+                <div class="text-sm small-muted">Crafting names...</div>
+            </div>`;
+        } else if (appState.error) {
+            const escapedError = String(appState.error).replace(/</g, '&lt;');
+            ui.results.panel.innerHTML = `<div class="bg-[#2b1a1a] border border-[#5b2626] rounded p-4"><div class="text-red-300 font-semibold">Error</div><div class="small-muted mt-2">${escapedError}</div></div>`;
+        } else {
+            if (appState.rawApiResponse) {
+                // Parsing failed logic
+                const escapedResponse = appState.rawApiResponse.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                ui.results.panel.innerHTML = `
+                    <div class="flex flex-col gap-3 p-2">
+                        <div class="font-semibold text-yellow-400">JSON Parsing Failed</div>
+                        <div class="small-muted">The API returned a response, but it was not in the expected JSON format. Here is the raw text from the model:</div>
+                        <pre class="w-full h-64 bg-[#0b1622] border border-[#223447] rounded p-2 text-xs font-mono overflow-auto">${escapedResponse}</pre>
+                    </div>`;
+            } else {
+                ui.results.panel.innerHTML = '<div class="flex-1 flex items-center justify-center small-muted h-full">No names yet — click Generate.</div>';
+            }
+        }
+        appState.renderedCount = 0;
+        return;
+    }
+
+    // 2. We have results. Remove initial loader if present.
+    const initialLoader = document.getElementById('initial-loader');
+    if (initialLoader) initialLoader.remove();
+
+    // Also remove the "No names yet" message if it persists (e.g. if we went from 0 to 1 result without isLoading being true momentarily?)
+    if (ui.results.panel.innerHTML.includes('No names yet — click Generate')) {
+         ui.results.panel.innerHTML = '';
+    }
+
+    // 3. Append new items
+    for (let i = appState.renderedCount; i < appState.results.length; i++) {
+        appendResult(appState.results[i]);
+    }
+    appState.renderedCount = appState.results.length;
+
+    // 4. Manage Stream Spinner (bottom loader)
+    let streamSpinner = document.getElementById('stream-spinner');
+    if (appState.isLoading) {
+        if (!streamSpinner) {
+            streamSpinner = el('div', 'flex justify-center py-4 w-full');
+            streamSpinner.id = 'stream-spinner';
+            streamSpinner.innerHTML = '<div class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>';
+            ui.results.panel.append(streamSpinner);
+        } else {
+            // Move to end
+            ui.results.panel.append(streamSpinner);
+        }
+    } else {
+        if (streamSpinner) streamSpinner.remove();
     }
 }
 
