@@ -68,13 +68,13 @@ function processApiResponse(rawArray) {
 
 function getSystemInstruction() {
     if (appState.mode === 'forge') {
-        return `You are a linguist creating new names.
-Output ONLY a valid JSON array of objects with this schema: [{"name": "", "roots": "morpheme (Language: gloss)", "meaning": "", "cluster": "Style Category"}]
+        return `ACT as an expert linguist specializing in onomastics and phonology.
+RETURN ONLY a strictly valid JSON array adhering to this schema: [{"name": "Unique Name", "roots": "morpheme (Language: gloss)", "meaning": "Evocative definition", "cluster": "Style Category"}]
 `;
     } else {
-        return `You are a cross-cultural linguistic analyst.
-Output ONLY a valid JSON array of objects with this schema:
-[{"name": "", "valid": boolean, "pronunciations": [{"lang": "", "phonetic": ""}], "semanticCheck": "Pass | Note"}]
+        return `ACT as a cross-cultural linguistic analyst.
+RETURN ONLY a strictly valid JSON array adhering to this schema:
+[{"name": "Name", "valid": boolean, "pronunciations": [{"lang": "Language Code", "phonetic": "IPA"}], "semanticCheck": "Pass | Note"}]
 `;
     }
 }
@@ -83,18 +83,18 @@ function getUserPrompt(count) {
     const { selectedLanguages, likedNames, selectedThemes, selectedStyle, gender, userBlacklist, sessionGeneratedNames, mode, harmonizerIsAllLanguages, surname, siblingNames, firstNameForMiddle } = appState;
 
     const context = [];
-    if (likedNames.length > 0) context.push(`Inspiration: ${likedNames.map(n => n.name).join(', ')}.`);
-    if (userBlacklist.length > 0) context.push(`Blacklist: ${userBlacklist.join(', ')}.`);
+    if (likedNames.length > 0) context.push(`INSPIRATION: ${likedNames.map(n => n.name).join(', ')}.`);
+    if (userBlacklist.length > 0) context.push(`BLACKLIST: ${userBlacklist.join(', ')}.`);
 
     let task = "";
     if (mode === 'forge') {
-       task = `Generate ${count} original, ${gender} names by fusing: ${selectedLanguages.join(' + ')}. Themes: ${selectedThemes.join(', ')}. Style: ${selectedStyle}.`;
-       if (surname) task += ` Surname: ${surname}.`;
-       if (siblingNames) task += ` Siblings: ${siblingNames}.`;
-       if (firstNameForMiddle) task += ` First Name (generating middle): ${firstNameForMiddle}.`;
+       task = `CONSTRUCT ${count} unique, ${gender} names by SYNTHESIZING phonemes from: ${selectedLanguages.join(' + ')}. THEMES: ${selectedThemes.join(', ')}. STYLE: ${selectedStyle}.`;
+       if (surname) task += ` SURNAME CONTEXT: ${surname}.`;
+       if (siblingNames) task += ` SIBLING CONTEXT: ${siblingNames}.`;
+       if (firstNameForMiddle) task += ` FIRST NAME (generating middle): ${firstNameForMiddle}.`;
     } else {
        const strictness = harmonizerIsAllLanguages ? "all" : "multiple";
-       task = `Find ${count} ${gender} names that work in ${strictness} of: ${selectedLanguages.join(', ')}.`;
+       task = `IDENTIFY ${count} ${gender} names that are culturally compatible with ${strictness} of: ${selectedLanguages.join(', ')}.`;
     }
 
     return `${context.join('\n')}
