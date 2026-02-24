@@ -106,4 +106,72 @@ describe('GeminiService', () => {
     const result = await service.generate("Hello", "System Instruction", "ContextHash");
     assert.strictEqual(result, expectedContent);
   });
+
+  it('should retry on 503 error and succeed', async () => {
+    const service = new GeminiService();
+    let attempt = 0;
+
+    // Mock fetch to fail once with 503 then succeed
+    global.fetch = mock.fn(async () => {
+      attempt++;
+      if (attempt === 1) {
+        return {
+          ok: false,
+          status: 503,
+          text: async () => JSON.stringify({ error: { message: "Service Unavailable" } })
+        };
+      }
+      return {
+        ok: true,
+        json: async () => ({
+          candidates: [
+            {
+              content: { parts: [{ text: "Recovered" }] },
+              finishReason: "STOP"
+            }
+          ]
+        })
+      };
+    });
+
+    // Reduce backoff for test speed by overriding the method wrapper or just ensuring it works
+    // To properly test backoff without waiting, we'd need to mock setTimeout, but simple retry check is enough.
+    // We can inject a smaller backoff by modifying the call inside if we exposed it, but here we rely on default.
+    // Actually, waiting 1s in test is annoying. I'll override _fetchWithRetry for this instance.
+    const originalFetchWithRetry = service._fetchWithRetry;
+    service._fetchWithRetry = function(url, options, retries, backoff) {
+        return originalFetchWithRetry.call(this, url, options, retries, 1); // 1ms backoff
+    };
+
+    const result = await service.generate("Hello", "System", "Hash");
+    assert.strictEqual(result, "Recovered");
+    assert.strictEqual(attempt, 2);
+  });
+
+  it('should throw error after max retries', async () => {
+    const service = new GeminiService();
+    let attempt = 0;
+
+    global.fetch = mock.fn(async () => {
+      attempt++;
+      return {
+        ok: false,
+        status: 503,
+        text: async () => "Unavailable"
+      };
+    });
+
+    // Reduce backoff for test speed
+    const originalFetchWithRetry = service._fetchWithRetry;
+    service._fetchWithRetry = function(url, options, retries, backoff) {
+        return originalFetchWithRetry.call(this, url, options, retries, 1);
+    };
+
+    await assert.rejects(
+      async () => await service.generate("Hello", "System", "Hash"),
+      /API Error 503/
+    );
+    // Initial + 3 retries = 4 attempts
+    assert.strictEqual(attempt, 4);
+  });
 });
