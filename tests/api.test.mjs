@@ -36,15 +36,16 @@ describe('GeminiService', () => {
     assert.strictEqual(service.lastContextHash, '');
   });
 
-  it('should use configured API key and model in generate calls', async () => {
+  it('should use configured API key and model in generate calls via headers', async () => {
     const service = new GeminiService();
     const testKey = 'test-api-key-2';
     const testModel = 'models/test-model-2';
     service.configure(testKey, testModel);
 
-    const mockFetch = mock.fn(async (url) => {
-      assert.ok(url.includes(`key=${testKey}`));
+    const mockFetch = mock.fn(async (url, options) => {
+      assert.ok(!url.includes('key='));
       assert.ok(url.includes(testModel));
+      assert.strictEqual(options.headers['x-goog-api-key'], testKey);
       return {
         ok: true,
         json: async () => ({
