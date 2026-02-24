@@ -72,10 +72,13 @@ export class GeminiService {
     }
 
     const response = await fetch(
-      `${CONFIG.API_BASE_URL}${this.model}:generateContent?key=${this.apiKey}`,
+      `${CONFIG.API_BASE_URL}${this.model}:generateContent`,
       {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'x-goog-api-key': this.apiKey
+        },
         body: JSON.stringify(body),
         signal
       }
@@ -164,10 +167,13 @@ export class GeminiService {
     }
 
     const response = await fetch(
-      `${CONFIG.API_BASE_URL}${this.model}:streamGenerateContent?key=${this.apiKey}`,
+      `${CONFIG.API_BASE_URL}${this.model}:streamGenerateContent`,
       {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'x-goog-api-key': this.apiKey
+        },
         body: JSON.stringify(body),
         signal
       }

@@ -13,9 +13,10 @@ describe('GeminiService Stream', () => {
         global.fetch = originalFetch;
     });
 
-    it('should yield chunks from streamGenerate', async () => {
+    it('should yield chunks from streamGenerate and use headers for API key', async () => {
         const service = new GeminiService();
-        service.configure('key', 'model');
+        const testKey = 'test-stream-key';
+        service.configure(testKey, 'model');
 
         // Simulate a stream of JSON objects as bytes
         const mockStream = new ReadableStream({
@@ -31,12 +32,15 @@ describe('GeminiService Stream', () => {
             }
         });
 
-        global.fetch = mock.fn(async () => {
+        const mockFetch = mock.fn(async (url, options) => {
+            assert.ok(!url.includes('key='));
+            assert.strictEqual(options.headers['x-goog-api-key'], testKey);
             return {
                 ok: true,
                 body: mockStream
             };
         });
+        global.fetch = mockFetch;
 
         const stream = service.streamGenerate("prompt", "system", "hash");
         let result = "";
