@@ -208,3 +208,51 @@ export function createHeader(onReset, onHistory, onSettings) {
     header.append(titleDiv, buttonsDiv);
     return header;
 }
+
+export function createLoadingSkeleton() {
+    const container = el('div', 'flex flex-col items-center justify-center py-8 gap-4');
+    container.id = 'initial-loader';
+
+    // Spinner
+    const spinner = el('div', 'spinner');
+
+    // Text with pulse
+    const text = el('div', 'text-sm small-muted animate-pulse');
+    text.textContent = 'Crafting names...';
+
+    container.append(spinner, text);
+    return container;
+}
+
+export function createStreamSpinner() {
+    const spinnerContainer = el('div', 'flex justify-center py-4 w-full');
+    spinnerContainer.id = 'stream-spinner';
+    const spinner = el('div', 'w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin');
+    spinnerContainer.append(spinner);
+    return spinnerContainer;
+}
+
+export function createErrorDisplay(error) {
+    const container = el('div', 'bg-[#2b1a1a] border border-[#5b2626] rounded p-4');
+    const title = el('div', 'text-red-300 font-semibold');
+    title.textContent = 'Error';
+    const message = el('div', 'small-muted mt-2');
+    message.textContent = String(error);
+    container.append(title, message);
+    return container;
+}
+
+export function createJsonErrorDisplay(rawResponse) {
+    const container = el('div', 'flex flex-col gap-3 p-2');
+    const title = el('div', 'font-semibold text-yellow-400');
+    title.textContent = 'JSON Parsing Failed';
+
+    const desc = el('div', 'small-muted');
+    desc.textContent = 'The API returned a response, but it was not in the expected JSON format. Here is the raw text from the model:';
+
+    const pre = el('pre', 'w-full h-64 bg-[#0b1622] border border-[#223447] rounded p-2 text-xs font-mono overflow-auto');
+    pre.textContent = rawResponse;
+
+    container.append(title, desc, pre);
+    return container;
+}

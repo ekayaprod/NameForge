@@ -2,7 +2,7 @@ import { ui } from './state.js';
 import { appState } from '../state.js';
 import { CONFIG } from '../config.js';
 import { el } from '../utils.js';
-import { createNameCard } from './components.js';
+import { createNameCard, createLoadingSkeleton, createErrorDisplay, createJsonErrorDisplay, createStreamSpinner } from './components.js';
 import { geminiService } from '../api.js';
 import { handleCopyAll, handleExport } from './actions.js';
 
@@ -15,6 +15,13 @@ style.textContent = `
 }
 .animate-fade-in-up {
   animation: fadeInUp 0.5s ease-out forwards;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .5; }
+}
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 `;
 document.head.appendChild(style);
@@ -63,26 +70,16 @@ export function updateResultsPanel() {
     // 1. Handle Reset/Clear or Error conditions where we wipe the panel
     if (appState.results.length === 0) {
         if (appState.isLoading) {
-            ui.results.panel.innerHTML = `
-            <div class="flex flex-col items-center justify-center py-8 gap-4" id="initial-loader">
-                <div class="spinner"></div>
-                <div class="text-sm small-muted">Crafting names...</div>
-            </div>`;
+            ui.results.panel.replaceChildren(createLoadingSkeleton());
         } else if (appState.error) {
-            const escapedError = String(appState.error).replace(/</g, '&lt;');
-            ui.results.panel.innerHTML = `<div class="bg-[#2b1a1a] border border-[#5b2626] rounded p-4"><div class="text-red-300 font-semibold">Error</div><div class="small-muted mt-2">${escapedError}</div></div>`;
+            ui.results.panel.replaceChildren(createErrorDisplay(appState.error));
         } else {
             if (appState.rawApiResponse) {
-                // Parsing failed logic
-                const escapedResponse = appState.rawApiResponse.replace(/</g, '&lt;').replace(/>/g, '&gt;');
-                ui.results.panel.innerHTML = `
-                    <div class="flex flex-col gap-3 p-2">
-                        <div class="font-semibold text-yellow-400">JSON Parsing Failed</div>
-                        <div class="small-muted">The API returned a response, but it was not in the expected JSON format. Here is the raw text from the model:</div>
-                        <pre class="w-full h-64 bg-[#0b1622] border border-[#223447] rounded p-2 text-xs font-mono overflow-auto">${escapedResponse}</pre>
-                    </div>`;
+                ui.results.panel.replaceChildren(createJsonErrorDisplay(appState.rawApiResponse));
             } else {
-                ui.results.panel.innerHTML = '<div class="flex-1 flex items-center justify-center small-muted h-full">No names yet — click Generate.</div>';
+                const emptyState = el('div', 'flex-1 flex items-center justify-center small-muted h-full');
+                emptyState.textContent = 'No names yet — click Generate.';
+                ui.results.panel.replaceChildren(emptyState);
             }
         }
         appState.renderedCount = 0;
@@ -93,9 +90,9 @@ export function updateResultsPanel() {
     const initialLoader = document.getElementById('initial-loader');
     if (initialLoader) initialLoader.remove();
 
-    // Also remove the "No names yet" message if it persists (e.g. if we went from 0 to 1 result without isLoading being true momentarily?)
-    if (ui.results.panel.innerHTML.includes('No names yet — click Generate')) {
-         ui.results.panel.innerHTML = '';
+    // If we are starting fresh (renderedCount 0), clear any previous state (empty/error/loading)
+    if (appState.renderedCount === 0) {
+         ui.results.panel.replaceChildren();
     }
 
     // 3. Append new items
@@ -108,9 +105,7 @@ export function updateResultsPanel() {
     let streamSpinner = document.getElementById('stream-spinner');
     if (appState.isLoading) {
         if (!streamSpinner) {
-            streamSpinner = el('div', 'flex justify-center py-4 w-full');
-            streamSpinner.id = 'stream-spinner';
-            streamSpinner.innerHTML = '<div class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>';
+            streamSpinner = createStreamSpinner();
             ui.results.panel.append(streamSpinner);
         } else {
             // Move to end
