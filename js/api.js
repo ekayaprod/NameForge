@@ -28,6 +28,40 @@ export class GeminiService {
   }
 
   /**
+   * Internal helper to fetch with exponential backoff retry logic.
+   * @param {string} url - The URL to fetch.
+   * @param {object} options - Fetch options.
+   * @param {number} retries - Number of retries remaining (default 3).
+   * @param {number} backoff - Initial backoff in ms (default 1000).
+   * @returns {Promise<Response>}
+   */
+  async _fetchWithRetry(url, options, retries = 3, backoff = 1000) {
+    try {
+      const response = await fetch(url, options);
+
+      // Retry on 429 (Too Many Requests) or 5xx (Server Error)
+      if (!response.ok && (response.status === 429 || response.status >= 500)) {
+        if (retries > 0) {
+          console.warn(`Request failed with ${response.status}. Retrying in ${backoff}ms...`);
+          await new Promise(resolve => setTimeout(resolve, backoff));
+          return this._fetchWithRetry(url, options, retries - 1, backoff * 2);
+        }
+      }
+      return response;
+    } catch (error) {
+       // Only retry if it's not an abort error
+       if (error.name === 'AbortError') throw error;
+
+       if (retries > 0) {
+          console.warn(`Request failed with network error. Retrying in ${backoff}ms...`, error);
+          await new Promise(resolve => setTimeout(resolve, backoff));
+          return this._fetchWithRetry(url, options, retries - 1, backoff * 2);
+       }
+       throw error;
+    }
+  }
+
+  /**
    * Generates content using the chat history.
    * @param {string} userPrompt - The user's message.
    * @param {string} systemInstructionText - The static system rules.
@@ -71,7 +105,7 @@ export class GeminiService {
       body.systemInstruction = { parts: [{ text: systemInstructionText }] };
     }
 
-    const response = await fetch(
+    const response = await this._fetchWithRetry(
       `${CONFIG.API_BASE_URL}${this.model}:generateContent`,
       {
         method: 'POST',
@@ -166,7 +200,7 @@ export class GeminiService {
       body.systemInstruction = { parts: [{ text: systemInstructionText }] };
     }
 
-    const response = await fetch(
+    const response = await this._fetchWithRetry(
       `${CONFIG.API_BASE_URL}${this.model}:streamGenerateContent`,
       {
         method: 'POST',
