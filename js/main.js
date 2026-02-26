@@ -3,8 +3,9 @@ import { ui, initLayout, updateControls, updateResultsPanel, setGenerateHandler,
 import { geminiService } from './api.js';
 import { showToast } from './ui/toast.js';
 import { CONFIG } from './config.js';
-import { FORGE_SCHEMA, HARMONIZER_SCHEMA } from './schemas.js';
+import { FORGE_SCHEMA, HARMONIZER_SCHEMA, FORGE_RUNTIME_SCHEMA, HARMONIZER_RUNTIME_SCHEMA } from './schemas.js';
 import { extractJsonObjects } from './utils.js';
+import { sanitizeInput } from './security.js';
 
 // --- Helpers ---
 
@@ -45,7 +46,18 @@ function processApiResponse(rawArray) {
     if (!rawArray?.length) return [];
     const fullBlacklist = appState.userBlacklist.map(b => b.toLowerCase());
     return rawArray.map(it => {
-      let name = (it.name || "").toString().trim();
+      // 1. Strict Schema Validation
+      const schema = appState.mode === 'forge' ? FORGE_RUNTIME_SCHEMA : HARMONIZER_RUNTIME_SCHEMA;
+      const validation = schema.safeParse(it);
+
+      if (!validation.success) {
+          console.warn("Schema validation failed for item:", it, validation.error);
+          return null;
+      }
+
+      const validItem = validation.data;
+
+      let name = (validItem.name || "").toString().trim();
       if (!name || fullBlacklist.some(b => name.toLowerCase().includes(b))) return null;
       if (appState.outputAlphabet === 'English (Simplified/No Accents)') {
         name = name.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
@@ -53,15 +65,15 @@ function processApiResponse(rawArray) {
       const base = { name };
       if (appState.mode === 'forge') {
           return { ...base,
-            meaning: (it.meaning || "").toString().trim(),
-            roots: (it.roots || "").toString().trim(),
-            cluster: (it.cluster || "Misc").trim(),
+            meaning: (validItem.meaning || "").toString().trim(),
+            roots: (validItem.roots || "").toString().trim(),
+            cluster: (validItem.cluster || "Misc").trim(),
           };
       } else {
           return { ...base,
-            valid: it.valid === true,
-            pronunciations: it.pronunciations || [],
-            semanticCheck: it.semanticCheck || "Pass" // Default to Pass if not provided
+            valid: validItem.valid === true,
+            pronunciations: validItem.pronunciations || [],
+            semanticCheck: validItem.semanticCheck || "Pass" // Default to Pass if not provided
           };
       }
     }).filter(Boolean);
@@ -87,12 +99,17 @@ function getUserPrompt(count) {
     if (likedNames.length > 0) context.push(`INSPIRATION: ${likedNames.map(n => n.name).join(', ')}.`);
     if (userBlacklist.length > 0) context.push(`BLACKLIST: ${userBlacklist.join(', ')}.`);
 
+    // Sanitize Inputs
+    const safeSurname = sanitizeInput(surname);
+    const safeSiblingNames = sanitizeInput(siblingNames);
+    const safeFirstNameForMiddle = sanitizeInput(firstNameForMiddle);
+
     let task = "";
     if (mode === 'forge') {
        task = `CONSTRUCT ${count} unique, ${gender} names by SYNTHESIZING phonemes from: ${selectedLanguages.join(' + ')}. THEMES: ${selectedThemes.join(', ')}. STYLE: ${selectedStyle}.`;
-       if (surname) task += ` SURNAME CONTEXT: ${surname}.`;
-       if (siblingNames) task += ` SIBLING CONTEXT: ${siblingNames}.`;
-       if (firstNameForMiddle) task += ` FIRST NAME (generating middle): ${firstNameForMiddle}.`;
+       if (safeSurname) task += ` SURNAME CONTEXT: ${safeSurname}.`;
+       if (safeSiblingNames) task += ` SIBLING CONTEXT: ${safeSiblingNames}.`;
+       if (safeFirstNameForMiddle) task += ` FIRST NAME (generating middle): ${safeFirstNameForMiddle}.`;
     } else {
        const strictness = harmonizerIsAllLanguages ? "all" : "multiple";
        task = `IDENTIFY ${count} ${gender} names that are culturally compatible with ${strictness} of: ${selectedLanguages.join(', ')}.`;
