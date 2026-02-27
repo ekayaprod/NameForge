@@ -82,13 +82,12 @@ function processApiResponse(rawArray) {
 function getSystemInstruction() {
     if (appState.mode === 'forge') {
         return `ACT as an expert linguist specializing in onomastics and phonology.
-RETURN ONLY a strictly valid JSON array adhering to this schema: [{"name": "Unique Name", "roots": "morpheme (Language: gloss)", "meaning": "Evocative definition", "cluster": "Style Category"}]
-`;
+Create unique, evocative names by fusing linguistic roots and thematic elements.
+Each name should have a deep meaning and a clear etymological breakdown.`;
     } else {
         return `ACT as a cross-cultural linguistic analyst.
-RETURN ONLY a strictly valid JSON array adhering to this schema:
-[{"name": "Name", "valid": boolean, "pronunciations": [{"lang": "Language Code", "phonetic": "IPA"}], "semanticCheck": "Pass | Note"}]
-`;
+Identify existing names that are valid across multiple cultures.
+Verify validity, provide accurate IPA pronunciations for each language, and ensure semantic appropriateness.`;
     }
 }
 

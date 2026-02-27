@@ -24,12 +24,12 @@ def run(playwright):
     page.click("text=Settings")
 
     # Verify Model Dropdown options
-    # We expect Gemini 1.5 Flash and Pro
+    # We expect Gemini 2.0 Flash and Pro
     content = page.content()
-    if "gemini-1.5-flash" in content:
-        print("Gemini 1.5 Flash found in settings")
+    if "gemini-2.0-flash" in content:
+        print("Gemini 2.0 Flash found in settings")
     else:
-        print("Gemini 1.5 Flash NOT found")
+        print("Gemini 2.0 Flash NOT found")
 
     # Take screenshot of settings
     if not os.path.exists("/home/jules/verification"):
