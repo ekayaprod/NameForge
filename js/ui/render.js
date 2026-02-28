@@ -4,7 +4,7 @@ import { CONFIG } from '../config.js';
 import { el } from '../utils.js';
 import { createNameCard, createLoadingSkeleton, createErrorDisplay, createJsonErrorDisplay, createStreamSpinner } from './components.js';
 import { geminiService } from '../api.js';
-import { handleCopyAll, handleExport } from './actions.js';
+import { handleCopyAll, handleExport, handleExportCsv } from './actions.js';
 
 // Inject animations
 const style = document.createElement('style');
@@ -259,11 +259,13 @@ export function toggleModeUI(mode) {
         </div>
         <div class="flex gap-2">
                 <button id="copy-all-btn" class="chip text-xs" title="Copy all names">Copy All</button>
-                <button id="export-btn" class="chip text-xs" title="Download JSON">Export</button>
+                <button id="export-btn" class="chip text-xs" title="Download JSON">JSON</button>
+                <button id="export-csv-btn" class="chip text-xs" title="Download CSV">CSV</button>
         </div>
     `;
     ui.results.header.querySelector('#copy-all-btn').addEventListener('click', handleCopyAll);
     ui.results.header.querySelector('#export-btn').addEventListener('click', handleExport);
+    ui.results.header.querySelector('#export-csv-btn').addEventListener('click', handleExportCsv);
 
     appState.results = []; updateResultsPanel(); updateControls();
 }

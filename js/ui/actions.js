@@ -29,6 +29,54 @@ export function handleExport() {
     downloadAnchorNode.remove();
 }
 
+
+export function handleExportCsv() {
+    if (!appState.results.length) { showToast('No results to export.', true); return; }
+
+    const isForge = appState.mode === 'forge';
+    let headers = [];
+    let rows = [];
+
+    const escapeCsv = (str) => {
+        if (str === null || str === undefined) return '""';
+        const escaped = String(str).replace(/"/g, '""');
+        return `"${escaped}"`;
+    };
+
+    if (isForge) {
+        headers = ['name', 'roots', 'meaning', 'cluster'];
+        rows = appState.results.map(r => [
+            escapeCsv(r.name),
+            escapeCsv(r.roots),
+            escapeCsv(r.meaning),
+            escapeCsv(r.cluster)
+        ].join(','));
+    } else {
+        headers = ['name', 'valid', 'pronunciations', 'semanticCheck'];
+        rows = appState.results.map(r => {
+            const prons = r.pronunciations ? r.pronunciations.map(p => `${p.lang}: ${p.phonetic}`).join(' | ') : '';
+            return [
+                escapeCsv(r.name),
+                escapeCsv(r.valid),
+                escapeCsv(prons),
+                escapeCsv(r.semanticCheck)
+            ].join(',');
+        });
+    }
+
+    const csvContent = [headers.join(','), ...rows].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+
+    const downloadAnchorNode = document.createElement('a');
+    downloadAnchorNode.setAttribute("href", url);
+    downloadAnchorNode.setAttribute("download", `nameforge_export_${Date.now()}.csv`);
+    document.body.appendChild(downloadAnchorNode); // required for firefox
+    downloadAnchorNode.click();
+    downloadAnchorNode.remove();
+    URL.revokeObjectURL(url);
+}
+
 export function handleSurpriseMe() {
     // Random Languages (2 or 3)
     const numLangs = Math.random() > 0.5 ? 2 : 3;
