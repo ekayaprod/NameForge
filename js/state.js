@@ -35,6 +35,11 @@ export const appState = {
 let idleHandle = null;
 let timeoutHandle = null;
 
+/**
+ * Persists the current application state to localStorage.
+ * Skips transient properties (isLoading, error, rawApiResponse, generationController, renderedCount).
+ * Uses requestIdleCallback for performance, falling back to setTimeout.
+ */
 export function saveState() {
   const performSave = () => {
     try {
@@ -56,6 +61,10 @@ export function saveState() {
   }
 }
 
+/**
+ * Loads the application state from localStorage.
+ * Merges loaded data with default values to ensure backward compatibility and state integrity.
+ */
 export function loadState() {
     try {
       const saved = localStorage.getItem(`nameForgeState_v${CONFIG.APP_VERSION}`);
@@ -82,8 +91,18 @@ export function loadState() {
     } catch (e) { console.warn("Could not load state:", e); }
 }
 
+/**
+ * A debounced version of saveState that delays execution by 500ms.
+ * Useful for high-frequency events like text input to prevent excessive localStorage writes.
+ * @type {Function}
+ */
 export const debouncedSaveState = debounce(saveState, 500);
 
+/**
+ * Logs an error message to the application state's recent errors list.
+ * Maintains a maximum of 5 recent errors by shifting the oldest out.
+ * @param {string} message - The error message to log.
+ */
 export function logError(message) {
   if (!appState.recentErrors) appState.recentErrors = [];
   appState.recentErrors.push(`${new Date().toLocaleTimeString()}: ${message}`);

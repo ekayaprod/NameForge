@@ -2,6 +2,12 @@ import { el, debounce } from '../utils.js';
 import { appState, debouncedSaveState } from '../state.js';
 import { CONFIG } from '../config.js';
 
+/**
+ * Wraps a form control element with a styled label and container.
+ * @param {string} label - The text label for the control.
+ * @param {HTMLElement} controlElement - The input, select, or textarea element.
+ * @returns {HTMLElement} The constructed section element.
+ */
 export function createControlSection(label, controlElement) {
     const section = el('div');
     const labelEl = el('label', 'text-sm font-medium');
@@ -19,6 +25,13 @@ export function createControlSection(label, controlElement) {
     return section;
 }
 
+/**
+ * Creates a custom styled select dropdown element.
+ * @param {Array<string|Object>} options - Array of options (strings or {value, text} objects).
+ * @param {string} selectedValue - The initially selected value.
+ * @param {Function} changeHandler - Event handler for the change event.
+ * @returns {HTMLSelectElement} The constructed select element.
+ */
 export function createSelectControl(options, selectedValue, changeHandler) {
     const select = el('select', 'w-full bg-[#0b1622] border border-[#223447] rounded px-3 py-2 text-sm');
     options.forEach(opt => {
@@ -37,6 +50,16 @@ export function createSelectControl(options, selectedValue, changeHandler) {
     return select;
 }
 
+/**
+ * Creates a numeric input control wrapped in a labeled section.
+ * Handles value bounds checking and state updating.
+ * @param {string} label - The label for the input.
+ * @param {string} stateKey - The key in appState this input controls.
+ * @param {number} min - The minimum allowed value.
+ * @param {number} max - The maximum allowed value.
+ * @param {number} step - The increment step.
+ * @returns {HTMLElement} The constructed control section.
+ */
 export function createNumericInputControl(label, stateKey, min, max, step) {
     const input = el('input', 'w-full bg-[#0b1622] border border-[#223447] rounded px-3 py-2 text-sm');
     input.type = 'number';
@@ -56,6 +79,14 @@ export function createNumericInputControl(label, stateKey, min, max, step) {
     return createControlSection(label, input);
 }
 
+/**
+ * Creates a text input field for contextual information with an automatically debounced input handler.
+ * @param {string} labelText - The label text.
+ * @param {string} stateKey - The key in appState to update.
+ * @param {Function} [onInput] - Optional additional callback executed after debouncing.
+ * @param {string} [containerClass=""] - Optional extra CSS classes for the container.
+ * @returns {HTMLElement} The constructed input container.
+ */
 export function createContextInput(labelText, stateKey, onInput, containerClass = '') {
     const container = el('div', containerClass);
 
@@ -80,6 +111,12 @@ export function createContextInput(labelText, stateKey, onInput, containerClass 
     return container;
 }
 
+/**
+ * Creates a name card DOM element to display a generated result.
+ * The card structure adapts based on whether the app is in "forge" or "harmonizer" mode.
+ * @param {Object} item - The result object to render.
+ * @returns {HTMLElement} The constructed card element.
+ */
 export function createNameCard(item) {
     const card = el('div',`bg-[#081426] border border-[#123047] rounded p-4 flex flex-col gap-2 fade`);
     card.dataset.nameCard = item.name;
@@ -160,6 +197,14 @@ export function createNameCard(item) {
     return card;
 }
 
+/**
+ * Creates a generic modal overlay and container.
+ * @param {string} id - The unique ID for the modal.
+ * @param {string} title - The title text.
+ * @param {HTMLElement|string} contentEl - The content inside the modal.
+ * @param {HTMLElement[]} [footerContent] - Optional array of elements for the modal footer.
+ * @returns {HTMLElement} The constructed modal element.
+ */
 export function createModal(id, title, contentEl, footerContent) {
     const modal = el('div', 'modal-backdrop items-center justify-center');
     modal.id = id;
@@ -180,6 +225,13 @@ export function createModal(id, title, contentEl, footerContent) {
     return modal;
 }
 
+/**
+ * Creates the main application header with title, subtitle, and action buttons.
+ * @param {Function} onReset - Handler for the reset button.
+ * @param {Function} onHistory - Handler for the history button.
+ * @param {Function} onSettings - Handler for the settings button.
+ * @returns {HTMLElement} The constructed header element.
+ */
 export function createHeader(onReset, onHistory, onSettings) {
     const header = el('div', 'flex justify-between items-center');
     const titleDiv = el('div');
@@ -209,6 +261,10 @@ export function createHeader(onReset, onHistory, onSettings) {
     return header;
 }
 
+/**
+ * Creates a loading skeleton overlay with a spinner and pulsing text.
+ * @returns {HTMLElement} The constructed skeleton element.
+ */
 export function createLoadingSkeleton() {
     const container = el('div', 'flex flex-col items-center justify-center py-8 gap-4');
     container.id = 'initial-loader';
@@ -224,6 +280,10 @@ export function createLoadingSkeleton() {
     return container;
 }
 
+/**
+ * Creates a small inline spinner used during streaming generation.
+ * @returns {HTMLElement} The constructed spinner element.
+ */
 export function createStreamSpinner() {
     const spinnerContainer = el('div', 'flex justify-center py-4 w-full');
     spinnerContainer.id = 'stream-spinner';
@@ -232,6 +292,11 @@ export function createStreamSpinner() {
     return spinnerContainer;
 }
 
+/**
+ * Creates a standard error display block.
+ * @param {Error|string} error - The error object or message to display.
+ * @returns {HTMLElement} The constructed error element.
+ */
 export function createErrorDisplay(error) {
     const container = el('div', 'bg-[#2b1a1a] border border-[#5b2626] rounded p-4');
     const title = el('div', 'text-red-300 font-semibold');
@@ -242,6 +307,12 @@ export function createErrorDisplay(error) {
     return container;
 }
 
+/**
+ * Creates a specialized error display for when the API returns malformed JSON.
+ * Displays the raw text response inside a scrollable monospace block.
+ * @param {string} rawResponse - The raw text that failed to parse.
+ * @returns {HTMLElement} The constructed error element.
+ */
 export function createJsonErrorDisplay(rawResponse) {
     const container = el('div', 'flex flex-col gap-3 p-2');
     const title = el('div', 'font-semibold text-yellow-400');

@@ -4,6 +4,9 @@ import { CONFIG } from '../config.js';
 import { updateControls, updateResultsPanel } from './render.js';
 import { showToast } from './toast.js';
 
+/**
+ * Copies all generated names and their primary details to the clipboard.
+ */
 export async function handleCopyAll() {
     if (!appState.results.length) { showToast('No results to copy.', true); return; }
     const text = appState.results.map(r => {
@@ -18,6 +21,9 @@ export async function handleCopyAll() {
     }
 }
 
+/**
+ * Exports the current generation results to a JSON file.
+ */
 export function handleExport() {
     if (!appState.results.length) { showToast('No results to export.', true); return; }
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appState.results, null, 2));
@@ -30,6 +36,9 @@ export function handleExport() {
 }
 
 
+/**
+ * Exports the current generation results to a CSV file.
+ */
 export function handleExportCsv() {
     if (!appState.results.length) { showToast('No results to export.', true); return; }
 
@@ -77,6 +86,9 @@ export function handleExportCsv() {
     URL.revokeObjectURL(url);
 }
 
+/**
+ * Randomizes selected languages and themes, then updates the UI.
+ */
 export function handleSurpriseMe() {
     // Random Languages (2 or 3)
     const numLangs = Math.random() > 0.5 ? 2 : 3;
@@ -95,6 +107,11 @@ export function handleSurpriseMe() {
     updateControls();
 }
 
+/**
+ * Event delegate for clicks within the controls panel.
+ * Handles selection and deselection of option chips.
+ * @param {Event} event - The click event.
+ */
 export function handleControlsClick(event) {
     const chip = event.target.closest('.chip[data-option]');
     if (chip) {
@@ -121,6 +138,12 @@ export function handleControlsClick(event) {
     }
 }
 
+/**
+ * Handles user feedback (like/dislike) for a specific generated name.
+ * Updates appState and dynamically modifies the DOM to reflect the change.
+ * @param {string} name - The generated name receiving feedback.
+ * @param {boolean} isThumbUp - True if liked, false if disliked (blacklisted).
+ */
 export function handleFeedback(name, isThumbUp) {
     const nameLower = name.toLowerCase();
     const isLiked = appState.likedNames.some(n => n.name === name);
@@ -157,6 +180,11 @@ export function handleFeedback(name, isThumbUp) {
     }
 }
 
+/**
+ * Event delegate for clicks within the results panel.
+ * Handles copy, like, and dislike actions on individual name cards.
+ * @param {Event} event - The click event.
+ */
 export async function handleResultsPanelClick(event) {
     const btn = event.target.closest('button[data-action]');
     if (!btn) return;
