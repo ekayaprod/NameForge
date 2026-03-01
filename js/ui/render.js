@@ -26,6 +26,11 @@ style.textContent = `
 `;
 document.head.appendChild(style);
 
+/**
+ * Toggles the visibility of a modal dialog.
+ * @param {HTMLElement} modal - The modal element to toggle.
+ * @param {boolean} show - True to show the modal, false to hide it.
+ */
 export function toggleModal(modal, show) {
     if (modal) {
         modal.style.display = show ? 'flex' : 'none';
@@ -66,6 +71,10 @@ function appendResult(item) {
     }
 }
 
+/**
+ * Updates the results panel in the UI with the latest generated names.
+ * Uses a differential rendering strategy based on renderedCount to improve performance.
+ */
 export function updateResultsPanel() {
     // 1. Handle Reset/Clear or Error conditions where we wipe the panel
     if (appState.results.length === 0) {
@@ -116,6 +125,9 @@ export function updateResultsPanel() {
     }
 }
 
+/**
+ * Updates the UI controls (chips, selects, inputs) to reflect the current appState.
+ */
 export function updateControls() {
     updateLanguageChips();
     if (appState.mode === 'forge') {
@@ -154,6 +166,9 @@ function updateGenerateButtonState() {
     }
 }
 
+/**
+ * Updates the selected language chips in the UI.
+ */
 export function updateLanguageChips() {
     ui.controls.languageChips.innerHTML = '';
     const allLangs = [...new Set([...CONFIG.LANG_OPTIONS, ...appState.userLanguages])];
@@ -176,6 +191,11 @@ export function updateLanguageChips() {
     });
 }
 
+/**
+ * Renders a list of chips into a container, indicating which ones are selected based on appState.
+ * @param {HTMLElement} container - The container element to append chips to.
+ * @param {string[]} options - An array of options to render as chips.
+ */
 export function updateChipSelector(container, options) {
     container.innerHTML = '';
     options.forEach(opt => {
@@ -187,6 +207,9 @@ export function updateChipSelector(container, options) {
     });
 }
 
+/**
+ * Updates the content of the history modal with liked and blacklisted names.
+ */
 export function updateHistoryModal() {
     const historyContent = ui.modals.history.querySelector('.scrolling-panel');
     historyContent.innerHTML = '';
@@ -244,6 +267,10 @@ export function updateHistoryModal() {
     }
 }
 
+/**
+ * Toggles the UI elements visibility based on the selected generation mode.
+ * @param {string} mode - The current mode ("forge" or "harmonizer").
+ */
 export function toggleModeUI(mode) {
     const isForge = mode === 'forge';
     ui.controls.forgeContainer.style.display = isForge ? 'flex' : 'none';

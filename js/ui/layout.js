@@ -152,6 +152,11 @@ function createResultsPanel() {
     return right;
 }
 
+/**
+ * Initializes the main application layout.
+ * Clears the root element, sets up the grid layout, constructs controls and results panels,
+ * creates necessary modals, and binds global event listeners.
+ */
 export function initLayout() {
     ui.root.innerHTML = '';
     const appWrap = el('div','max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6');

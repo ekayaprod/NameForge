@@ -1,5 +1,9 @@
 import { CONFIG } from './config.js';
 
+/**
+ * Service for interacting with the Google Gemini API.
+ * Handles API requests, response parsing, error handling, and maintains conversation history.
+ */
 export class GeminiService {
   constructor() {
     this.apiKey = "";
@@ -301,4 +305,8 @@ export class GeminiService {
   }
 }
 
+/**
+ * A singleton instance of the GeminiService to be used throughout the application.
+ * @type {GeminiService}
+ */
 export const geminiService = new GeminiService();
