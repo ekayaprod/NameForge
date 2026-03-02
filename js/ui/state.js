@@ -1,3 +1,7 @@
+/**
+ * A central object holding references to significant DOM elements and UI sections.
+ * Acts as an organizational registry for components initialized during layout.
+ */
 export const ui = {
     root: document.getElementById('app'),
     controls: {},
