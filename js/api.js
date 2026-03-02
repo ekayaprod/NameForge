@@ -7,7 +7,7 @@ import { CONFIG } from './config.js';
 export class GeminiService {
   constructor() {
     this.apiKey = "";
-    this.model = "models/gemini-1.5-flash";
+    this.model = "models/gemini-2.0-flash";
     this.history = []; // Stores { role: 'user'|'model', parts: [{text: ...}] }
     this.lastContextHash = ""; // To detect if we need to reset history
   }
@@ -15,7 +15,7 @@ export class GeminiService {
   /**
    * Configures the service with the user's API key and preferred model.
    * @param {string} apiKey - The Google Gemini API key.
-   * @param {string} model - The model identifier (e.g., 'models/gemini-1.5-flash').
+   * @param {string} model - The model identifier (e.g., 'models/gemini-2.0-flash').
    */
   configure(apiKey, model) {
     this.apiKey = apiKey;
