@@ -1,6 +1,11 @@
 import { CONFIG } from './config.js';
 import { debounce } from './utils.js';
 
+/**
+ * The central, mutable global state object for the application.
+ * Holds all user preferences, generation results, and transient UI states.
+ * Properties are selectively persisted to localStorage.
+ */
 export const appState = {
   version: CONFIG.APP_VERSION,
   mode: 'forge',

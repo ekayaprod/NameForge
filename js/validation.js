@@ -1,7 +1,19 @@
 // js/validation.js
 
 class ZodType {
+  /**
+   * Parses the given value according to the schema.
+   * @param {*} val - The value to parse.
+   * @returns {*} The parsed value.
+   * @throws {Error} If validation fails.
+   */
   parse(val) { throw new Error('Not implemented'); }
+
+  /**
+   * Safely parses the given value according to the schema without throwing errors.
+   * @param {*} val - The value to parse.
+   * @returns {{success: boolean, data?: *, error?: Error}} An object indicating success or failure.
+   */
   safeParse(val) {
     try {
       return { success: true, data: this.parse(val) };
@@ -9,12 +21,23 @@ class ZodType {
       return { success: false, error };
     }
   }
+
+  /**
+   * Returns a new schema that allows undefined or null values.
+   * @returns {ZodOptional} A new optional schema instance.
+   */
   optional() {
     return new ZodOptional(this);
   }
 }
 
 class ZodString extends ZodType {
+  /**
+   * Parses the given value to ensure it is a string.
+   * @param {*} val - The value to parse.
+   * @returns {string} The parsed string.
+   * @throws {Error} If the value is not a string.
+   */
   parse(val) {
     if (typeof val !== 'string') throw new Error(`Expected string, received ${typeof val}`);
     return val;
@@ -22,6 +45,12 @@ class ZodString extends ZodType {
 }
 
 class ZodBoolean extends ZodType {
+  /**
+   * Parses the given value to ensure it is a boolean.
+   * @param {*} val - The value to parse.
+   * @returns {boolean} The parsed boolean.
+   * @throws {Error} If the value is not a boolean.
+   */
   parse(val) {
     if (typeof val !== 'boolean') throw new Error(`Expected boolean, received ${typeof val}`);
     return val;
@@ -29,10 +58,21 @@ class ZodBoolean extends ZodType {
 }
 
 class ZodArray extends ZodType {
+  /**
+   * Creates an array schema validator.
+   * @param {ZodType} schema - The schema validator for the array items.
+   */
   constructor(schema) {
     super();
     this.schema = schema;
   }
+
+  /**
+   * Parses the given value to ensure it is an array and validates each item.
+   * @param {*} val - The value to parse.
+   * @returns {Array} The parsed array.
+   * @throws {Error} If the value is not an array or if any item fails validation.
+   */
   parse(val) {
     if (!Array.isArray(val)) throw new Error(`Expected array, received ${typeof val}`);
     return val.map((item, i) => {
@@ -46,10 +86,21 @@ class ZodArray extends ZodType {
 }
 
 class ZodObject extends ZodType {
+  /**
+   * Creates an object schema validator.
+   * @param {Object.<string, ZodType>} shape - The schema validator for the object properties.
+   */
   constructor(shape) {
     super();
     this.shape = shape;
   }
+
+  /**
+   * Parses the given value to ensure it is an object and validates each property.
+   * @param {*} val - The value to parse.
+   * @returns {Object} The parsed object.
+   * @throws {Error} If the value is not an object or if any property fails validation.
+   */
   parse(val) {
     if (typeof val !== 'object' || val === null || Array.isArray(val)) {
         throw new Error(`Expected object, received ${val === null ? 'null' : typeof val}`);
@@ -70,16 +121,30 @@ class ZodObject extends ZodType {
 }
 
 class ZodOptional extends ZodType {
+  /**
+   * Creates an optional schema validator.
+   * @param {ZodType} schema - The schema validator to wrap.
+   */
   constructor(schema) {
     super();
     this.schema = schema;
   }
+
+  /**
+   * Parses the given value, returning undefined for null or undefined values.
+   * @param {*} val - The value to parse.
+   * @returns {*} The parsed value or undefined.
+   */
   parse(val) {
     if (val === undefined || val === null) return undefined;
     return this.schema.parse(val);
   }
 }
 
+/**
+ * A lightweight, zero-dependency schema validation utility mimicking the Zod API.
+ * Provides runtime type checking and validation for structured data.
+ */
 export const z = {
   string: () => new ZodString(),
   boolean: () => new ZodBoolean(),

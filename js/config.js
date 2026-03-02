@@ -1,3 +1,7 @@
+/**
+ * Global configuration constants for the application.
+ * Defines API endpoints, versioning, constraints, and available options for generation.
+ */
 export const CONFIG = {
   API_BASE_URL: "https://generativelanguage.googleapis.com/v1beta/",
   APP_VERSION: "9.2", // Bumped version for refactor
