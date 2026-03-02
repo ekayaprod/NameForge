@@ -81,13 +81,15 @@ function processApiResponse(rawArray) {
 
 function getSystemInstruction() {
     if (appState.mode === 'forge') {
-        return `ACT as an expert linguist specializing in onomastics and phonology.
-Create unique, evocative names by fusing linguistic roots and thematic elements.
-Each name should have a deep meaning and a clear etymological breakdown.`;
+        return `ACT as an Expert Linguist specializing in onomastics, morphological derivation, and phonology.
+Construct names by expertly executing phonotactic blending between the requested linguistic roots, guided by the provided themes.
+Ensure every generated name has strict etymological breakdown, deep semantic resonance, and obeys the morphological rules of the source languages.
+NEVER use cliché AI preambles, and NEVER apologize.`;
     } else {
-        return `ACT as a cross-cultural linguistic analyst.
-Identify existing names that are valid across multiple cultures.
-Verify validity, provide accurate IPA pronunciations for each language, and ensure semantic appropriateness.`;
+        return `ACT as an Expert Cross-Cultural Linguistic Analyst and Philologist.
+Identify existing, historically attested names that demonstrate strict orthographic compatibility and valid phonotactics across the requested cultures.
+Verify linguistic validity, eliminate false cognates, provide precise IPA pronunciations for each language, and rigorously ensure cross-cultural semantic appropriateness.
+NEVER use cliché AI preambles, and NEVER apologize.`;
     }
 }
 
@@ -105,13 +107,13 @@ function getUserPrompt(count) {
 
     let task = "";
     if (mode === 'forge') {
-       task = `CONSTRUCT ${count} unique, ${gender} names by SYNTHESIZING phonemes from: ${selectedLanguages.join(' + ')}. THEMES: ${selectedThemes.join(', ')}. STYLE: ${selectedStyle}.`;
-       if (safeSurname) task += ` SURNAME CONTEXT: ${safeSurname}.`;
-       if (safeSiblingNames) task += ` SIBLING CONTEXT: ${safeSiblingNames}.`;
-       if (safeFirstNameForMiddle) task += ` FIRST NAME (generating middle): ${safeFirstNameForMiddle}.`;
+       task = `CONSTRUCT ${count} structurally valid, ${gender} names by meticulously SYNTHESIZING phonemes from: ${selectedLanguages.join(' + ')}. Incorporate semantic elements from THEMES: ${selectedThemes.join(', ')}. Adhere to STYLE: ${selectedStyle}.`;
+       if (safeSurname) task += ` Optimize rhythmic and phonotactic flow when paired with SURNAME CONTEXT: ${safeSurname}.`;
+       if (safeSiblingNames) task += ` Ensure morphological and thematic consistency with SIBLING CONTEXT: ${safeSiblingNames}.`;
+       if (safeFirstNameForMiddle) task += ` Ensure rhythmic flow when functioning as a middle name for FIRST NAME: ${safeFirstNameForMiddle}.`;
     } else {
        const strictness = harmonizerIsAllLanguages ? "all" : "multiple";
-       task = `IDENTIFY ${count} ${gender} names that are culturally compatible with ${strictness} of: ${selectedLanguages.join(', ')}.`;
+       task = `IDENTIFY ${count} distinct ${gender} names that are strictly orthographically and semantically compatible with ${strictness} of the following linguistic origins: ${selectedLanguages.join(', ')}.`;
     }
 
     return `${context.join('\n')}

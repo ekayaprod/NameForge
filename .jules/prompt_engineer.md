@@ -1,0 +1,3 @@
+## 2024-05-24 - [Name Generation API]
+**Learning:** Translating vague terms like "unique, evocative names" and "valid across multiple cultures" requires injecting domain knowledge like "morphological derivation", "phonotactic blending", and "cross-cultural orthographic compatibility" into the LLM constraints.
+**Action:** Replace vague adjectives with concrete technical requirements for the LLM. Keep the brittle JavaScript template string interpolations exactly intact while restructuring the surrounding English text.
