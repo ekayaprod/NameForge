@@ -186,8 +186,7 @@ export function updateLanguageChips() {
         const c = el('button', 'chip active');
         c.setAttribute('aria-pressed', 'true');
         c.dataset.option = opt;
-        let content = opt;
-        c.innerHTML = content;
+        c.textContent = opt;
         ui.controls.languageChips.append(c);
     });
 
@@ -230,13 +229,29 @@ export function updateHistoryModal() {
 
     if (appState.likedNames.length > 0) {
         const likedSection = el('div');
-        likedSection.innerHTML = `<h4 class="text-sm font-semibold text-green-400 mb-2">👍 Liked Names (${appState.likedNames.length})</h4>`;
+        const likedHeader = el('h4', 'text-sm font-semibold text-green-400 mb-2');
+        likedHeader.textContent = `👍 Liked Names (${appState.likedNames.length})`;
+        likedSection.append(likedHeader);
+
         const likedList = el('div', 'space-y-2');
         appState.likedNames.forEach(nameObj => {
             const item = el('div', 'bg-[#0a1a2e] rounded p-2 text-sm');
-            item.innerHTML = `<div class="font-medium">${nameObj.name}</div>`;
-            if (nameObj.meaning) item.innerHTML += `<div class="text-xs small-muted italic mt-1">${nameObj.meaning}</div>`;
-            if (nameObj.roots) item.innerHTML += `<div class="text-xs small-muted mt-1"><strong>Roots:</strong> ${nameObj.roots}</div>`;
+            const nameDiv = el('div', 'font-medium');
+            nameDiv.textContent = nameObj.name;
+            item.append(nameDiv);
+
+            if (nameObj.meaning) {
+                const meaningDiv = el('div', 'text-xs small-muted italic mt-1');
+                meaningDiv.textContent = nameObj.meaning;
+                item.append(meaningDiv);
+            }
+            if (nameObj.roots) {
+                const rootsDiv = el('div', 'text-xs small-muted mt-1');
+                const rootsStrong = el('strong');
+                rootsStrong.textContent = 'Roots:';
+                rootsDiv.append(rootsStrong, document.createTextNode(` ${nameObj.roots}`));
+                item.append(rootsDiv);
+            }
             likedList.append(item);
         });
         likedSection.append(likedList);
