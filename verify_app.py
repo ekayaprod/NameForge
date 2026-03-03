@@ -7,7 +7,7 @@ def run(playwright):
     page = context.new_page()
 
     # Load the page
-    page.goto("http://localhost:8000/index.html")
+    page.goto("http://localhost:8000/index.html", wait_until="domcontentloaded")
 
     # Wait for the Welcome Modal and click "Use without API" to dismiss it
     # Because it blocks the Settings button
