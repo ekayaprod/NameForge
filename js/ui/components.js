@@ -1,6 +1,5 @@
 import { el, debounce } from '../utils.js';
 import { appState, debouncedSaveState } from '../state.js';
-import { CONFIG } from '../config.js';
 
 /**
  * Wraps a form control element with a styled label and container.
