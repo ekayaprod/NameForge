@@ -124,7 +124,12 @@ export function handleControlsClick(event) {
         const max = stateKey === 'selectedLanguages' ? 3 : 2;
 
         if (currentValue.includes(option)) {
-            appState[stateKey] = currentValue.filter(x => x !== option);
+            const idx = currentValue.indexOf(option);
+            if (idx !== -1) {
+                const updated = [...currentValue];
+                updated.splice(idx, 1);
+                appState[stateKey] = updated;
+            }
         } else {
             if (currentValue.length >= max) {
                 appState[stateKey] = [...currentValue.slice(1), option];
@@ -151,19 +156,43 @@ export function handleFeedback(name, isThumbUp) {
 
     if (isThumbUp) {
         if (isLiked) {
-            appState.likedNames = appState.likedNames.filter(n => n.name !== name);
+            const idx = appState.likedNames.findIndex(n => n.name === name);
+            if (idx !== -1) {
+                const updated = [...appState.likedNames];
+                updated.splice(idx, 1);
+                appState.likedNames = updated;
+            }
             showToast('Unliked!');
         } else {
             const nameObj = appState.results.find(r => r.name === name) || { name };
             if (nameObj) appState.likedNames.push(nameObj);
-            if (isDisliked) appState.userBlacklist = appState.userBlacklist.filter(w => w !== nameLower);
+            if (isDisliked) {
+                const idx = appState.userBlacklist.indexOf(nameLower);
+                if (idx !== -1) {
+                    const updated = [...appState.userBlacklist];
+                    updated.splice(idx, 1);
+                    appState.userBlacklist = updated;
+                }
+            }
             showToast('Liked!');
         }
     } else { // Thumb Down
         if (!isDisliked) {
             appState.userBlacklist.push(nameLower);
-            if (isLiked) appState.likedNames = appState.likedNames.filter(n => n.name !== name);
-            appState.results = appState.results.filter(item => item.name.toLowerCase() !== nameLower);
+            if (isLiked) {
+                const idx = appState.likedNames.findIndex(n => n.name === name);
+                if (idx !== -1) {
+                    const updated = [...appState.likedNames];
+                    updated.splice(idx, 1);
+                    appState.likedNames = updated;
+                }
+            }
+            const resIdx = appState.results.findIndex(item => item.name.toLowerCase() === nameLower);
+            if (resIdx !== -1) {
+                const updated = [...appState.results];
+                updated.splice(resIdx, 1);
+                appState.results = updated;
+            }
             updateResultsPanel();
             showToast('Blacklisted & removed!');
         }
