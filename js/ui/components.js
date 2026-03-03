@@ -1,5 +1,6 @@
 import { el, debounce } from '../utils.js';
 import { appState, debouncedSaveState } from '../state.js';
+import { parseMarkdownToDOM } from './markdown.js';
 
 /**
  * Wraps a form control element with a styled label and container.
@@ -308,7 +309,7 @@ export function createErrorDisplay(error) {
 
 /**
  * Creates a specialized error display for when the API returns malformed JSON.
- * Displays the raw text response inside a scrollable monospace block.
+ * Displays the raw text response parsed to DOM instead of raw stream.
  * @param {string} rawResponse - The raw text that failed to parse.
  * @returns {HTMLElement} The constructed error element.
  */
@@ -318,11 +319,35 @@ export function createJsonErrorDisplay(rawResponse) {
     title.textContent = 'JSON Parsing Failed';
 
     const desc = el('div', 'small-muted');
-    desc.textContent = 'The API returned a response, but it was not in the expected JSON format. Here is the raw text from the model:';
+    desc.textContent = 'The API returned a response, but it was not in the expected JSON format. Here is the parsed response:';
 
-    const pre = el('pre', 'w-full h-64 bg-[#0b1622] border border-[#223447] rounded p-2 text-xs font-mono overflow-auto');
-    pre.textContent = rawResponse;
+    const markdownContent = el('div', 'bg-[#0b1622] border border-[#223447] rounded p-4 overflow-auto max-h-64');
+    markdownContent.append(parseMarkdownToDOM(rawResponse));
 
-    container.append(title, desc, pre);
+    container.append(title, desc, markdownContent);
+    return container;
+}
+
+/**
+ * Creates an animated container for streaming markdown before JSON is parsed.
+ * @param {string} rawResponse - The current accumulated text.
+ * @returns {HTMLElement} The constructed stream display element.
+ */
+export function createMarkdownStreamDisplay(rawResponse) {
+    const container = el('div', 'flex flex-col gap-2 p-4 bg-[#081426] border border-[#123047] rounded transition-all duration-300 ease-out overflow-hidden');
+    container.id = 'markdown-stream-display';
+
+    // Add pulsing loading indicator at top
+    const header = el('div', 'flex items-center gap-2 mb-2 text-blue-300/70 text-xs font-semibold uppercase tracking-wider');
+    const spinner = el('div', 'w-3 h-3 border border-blue-400/30 border-t-blue-400 rounded-full animate-spin');
+    const text = el('span', 'animate-pulse');
+    text.textContent = 'Receiving response...';
+    header.append(spinner, text);
+
+    // Parse current markdown state
+    const content = parseMarkdownToDOM(rawResponse);
+    content.classList.add('transition-all', 'duration-300');
+
+    container.append(header, content);
     return container;
 }

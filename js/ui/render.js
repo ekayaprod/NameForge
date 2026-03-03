@@ -2,7 +2,7 @@ import { ui } from './state.js';
 import { appState } from '../state.js';
 import { CONFIG } from '../config.js';
 import { el } from '../utils.js';
-import { createNameCard, createLoadingSkeleton, createErrorDisplay, createJsonErrorDisplay, createStreamSpinner } from './components.js';
+import { createNameCard, createLoadingSkeleton, createErrorDisplay, createJsonErrorDisplay, createStreamSpinner, createMarkdownStreamDisplay } from './components.js';
 import { geminiService } from '../api.js';
 import { handleCopyAll, handleExport, handleExportCsv } from './actions.js';
 
@@ -84,7 +84,14 @@ export function updateResultsPanel() {
     // 1. Handle Reset/Clear or Error conditions where we wipe the panel
     if (appState.results.length === 0) {
         if (appState.isLoading) {
-            ui.results.panel.replaceChildren(createLoadingSkeleton());
+            if (appState.rawApiResponse) {
+                // If we have started receiving text but haven't parsed a full JSON object yet
+                const streamDisplay = createMarkdownStreamDisplay(appState.rawApiResponse);
+                // Keep the same skeleton structure if it exists
+                ui.results.panel.replaceChildren(streamDisplay);
+            } else {
+                ui.results.panel.replaceChildren(createLoadingSkeleton());
+            }
         } else if (appState.error) {
             ui.results.panel.replaceChildren(createErrorDisplay(appState.error));
         } else {

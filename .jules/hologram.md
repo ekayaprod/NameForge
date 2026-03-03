@@ -11,3 +11,7 @@
 ## 2024-05-24 - [Generative UI Polish: Loading States]
 **Learning:** `innerHTML` injection for loading states is brittle and can lead to XSS if not careful with error messages. Replacing it with dedicated DOM element creation (`createLoadingSkeleton`, `createErrorDisplay`) ensures safety and allows for cleaner CSS transitions.
 **Action:** Use `replaceChildren()` with component functions for all major state transitions (Loading, Error, Empty).
+
+## 2024-06-03 - [Generative UI Polish: Streaming Markdown]
+**Learning:** Dumping raw API streams into `<pre>` blocks creates a jarring, unpolished user experience, especially before JSON parsing resolves.
+**Action:** Intercept raw markdown streams and render them safely into the DOM (`parseMarkdownToDOM`) using structured Tailwind components (`createMarkdownStreamDisplay`), ensuring fluid CSS transitions as the data arrives without relying on `dangerouslySetInnerHTML`.
