@@ -6,8 +6,17 @@ def run(playwright):
     context = browser.new_context()
     page = context.new_page()
 
+    # Route to block external fonts and tailwind CDN
+    def handle_route(route):
+        if any(domain in route.request.url for domain in ["fonts.googleapis.com", "fonts.gstatic.com"]):
+            route.abort()
+        else:
+            route.continue_()
+
+    page.route("**/*", handle_route)
+
     # Load the page
-    page.goto("http://localhost:8000/index.html")
+    page.goto("http://localhost:8000/index.html", wait_until="domcontentloaded")
 
     # Wait for the Welcome Modal and click "Use without API" to dismiss it
     # Because it blocks the Settings button
