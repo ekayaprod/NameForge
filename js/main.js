@@ -9,6 +9,12 @@ import { sanitizeInput } from './security.js';
 
 // --- Helpers ---
 
+/**
+ * Parses the raw text response from the API into a JSON array.
+ * Attempts to extract JSON from markdown code blocks if direct parsing fails.
+ * @param {string} text - The raw text response from the API.
+ * @returns {Array<Object>} The parsed array of generated name objects.
+ */
 function parseApiResponse(text) {
     if (!text) return [];
     try {
@@ -42,6 +48,13 @@ function parseApiResponse(text) {
     }
 }
 
+/**
+ * Processes and validates the raw array of objects returned from the API.
+ * Filters out items that fail schema validation or match the user's blacklist.
+ * Normalizes characters based on the selected output alphabet.
+ * @param {Array<Object>} rawArray - The unvalidated array of objects.
+ * @returns {Array<Object>} The validated and processed array of name objects.
+ */
 function processApiResponse(rawArray) {
     if (!rawArray?.length) return [];
     const fullBlacklist = appState.userBlacklist.map(b => b.toLowerCase());
@@ -79,6 +92,11 @@ function processApiResponse(rawArray) {
     }).filter(Boolean);
 }
 
+/**
+ * Constructs the system instruction prompt based on the current generation mode.
+ * Defines the AI's persona and strict behavioral constraints.
+ * @returns {string} The formatted system instruction string.
+ */
 function getSystemInstruction() {
     if (appState.mode === 'forge') {
         return `ACT as an Expert Linguist specializing in onomastics, morphological derivation, and phonology.
@@ -93,6 +111,12 @@ NEVER use cliché AI preambles, and NEVER apologize.`;
     }
 }
 
+/**
+ * Constructs the main user prompt by synthesizing the application state.
+ * Incorporates languages, themes, constraints, and contextual inputs into a specific task description.
+ * @param {number} count - The number of names to request generation for.
+ * @returns {string} The formatted user prompt string.
+ */
 function getUserPrompt(count) {
     const { selectedLanguages, likedNames, selectedThemes, selectedStyle, gender, userBlacklist, sessionGeneratedNames, mode, harmonizerIsAllLanguages, surname, siblingNames, firstNameForMiddle } = appState;
 
@@ -120,6 +144,12 @@ function getUserPrompt(count) {
 TASK: ${task}`;
 }
 
+/**
+ * Executes the core generation sequence.
+ * Validates requirements, prepares API payloads, and orchestrates the streaming response processing.
+ * Updates the global state and triggers UI renders iteratively as chunks arrive.
+ * @returns {Promise<void>}
+ */
 async function doGenerate() {
     if (appState.isLoading) return;
 

@@ -29,6 +29,12 @@ import {
     handleExport
 } from './actions.js';
 
+/**
+ * Constructs the left-hand controls panel containing mode switches, language selection,
+ * advanced inputs, themes, and style configurations.
+ * Initializes event listeners for specific control actions like adding a custom language.
+ * @returns {Object} An object containing references to the constructed DOM elements: { left, modeSwitcher }.
+ */
 function createControlsPanel() {
     const left = el('div','md:col-span-1 bg-[#071425] border border-[#0e2334] rounded-xl p-5 flex flex-col gap-4 h-fit');
 
@@ -138,6 +144,11 @@ function createControlsPanel() {
     return { left, modeSwitcher };
 }
 
+/**
+ * Constructs the right-hand results panel, including the primary generate button
+ * and the container for rendering generated name cards.
+ * @returns {HTMLElement} The constructed results panel container.
+ */
 function createResultsPanel() {
     const right = el('div','md:col-span-2 bg-[#071427] border border-[#0e2030] rounded-xl p-5 flex flex-col gap-2');
 
