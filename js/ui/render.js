@@ -38,6 +38,11 @@ export function toggleModal(modal, show) {
     }
 }
 
+/**
+ * Appends a generated name result into the UI results panel.
+ * Groups generated names into thematic clusters in Forge mode.
+ * @param {Object} item - The validated name object to render and append.
+ */
 function appendResult(item) {
     const card = createNameCard(item);
     card.classList.add('animate-fade-in-up');
@@ -147,6 +152,10 @@ export function updateControls() {
     updateGenerateButtonState();
 }
 
+/**
+ * Synchronizes the visual state and interactivity of the generate button.
+ * Disables the button if validation requirements (languages and themes) aren't met or if currently loading.
+ */
 function updateGenerateButtonState() {
     const langRequirement = appState.selectedLanguages.length >= 2 && appState.selectedLanguages.length <= 3;
     const themeRequirement = appState.mode === 'forge' ? appState.selectedThemes.length >= 1 : true;
