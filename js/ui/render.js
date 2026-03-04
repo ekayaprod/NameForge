@@ -197,7 +197,8 @@ export function updateLanguageChips() {
         ui.controls.languageChips.append(c);
     });
 
-    allLangs.filter(opt => !appState.selectedLanguages.includes(opt)).forEach(opt => {
+    const selectedSet = new Set(appState.selectedLanguages);
+    allLangs.filter(opt => !selectedSet.has(opt)).forEach(opt => {
         const c = el('button', 'chip');
         c.setAttribute('aria-pressed', 'false');
         c.textContent = opt;
