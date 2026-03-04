@@ -3,94 +3,12 @@ import { ui, initLayout, updateControls, updateResultsPanel, setGenerateHandler,
 import { geminiService } from './api.js';
 import { showToast } from './ui/toast.js';
 import { CONFIG } from './config.js';
-import { FORGE_SCHEMA, HARMONIZER_SCHEMA, FORGE_RUNTIME_SCHEMA, HARMONIZER_RUNTIME_SCHEMA } from './schemas.js';
+import { FORGE_SCHEMA, HARMONIZER_SCHEMA } from './schemas.js';
 import { extractJsonObjects } from './utils.js';
 import { sanitizeInput } from './security.js';
+import { parseApiResponse, processApiResponse } from './parser.js';
 
 // --- Helpers ---
-
-/**
- * Parses the raw text response from the API into a JSON array.
- * Attempts to extract JSON from markdown code blocks if direct parsing fails.
- * @param {string} text - The raw text response from the API.
- * @returns {Array<Object>} The parsed array of generated name objects.
- */
-function parseApiResponse(text) {
-    if (!text) return [];
-    try {
-      const parsed = JSON.parse(text);
-      if (Array.isArray(parsed)) return parsed;
-      return [];
-    } catch (e) {
-      console.warn("Direct JSON parse failed, attempting cleanup:", e);
-      let cleanedText = text;
-      if (text.includes('```')) {
-          const startIdx = text.indexOf('```');
-          const lastIdx = text.lastIndexOf('```');
-          if (startIdx !== lastIdx && lastIdx > startIdx) {
-              const firstNewline = text.indexOf('\n', startIdx);
-              const contentStart = (firstNewline !== -1 && firstNewline < lastIdx) ? firstNewline + 1 : startIdx + 3;
-              cleanedText = text.substring(contentStart, lastIdx);
-          } else {
-              cleanedText = text.replace(/```[a-z]*\n?/gi, '').replace(/```/g, '');
-          }
-      }
-      cleanedText = cleanedText.trim();
-      try {
-          const parsed = JSON.parse(cleanedText);
-          if (Array.isArray(parsed)) return parsed;
-      } catch(e2) {
-          console.warn("Cleanup parse failed:", e2);
-      }
-
-      logError("Failed to parse API response");
-      return [];
-    }
-}
-
-/**
- * Processes and validates the raw array of objects returned from the API.
- * Filters out items that fail schema validation or match the user's blacklist.
- * Normalizes characters based on the selected output alphabet.
- * @param {Array<Object>} rawArray - The unvalidated array of objects.
- * @returns {Array<Object>} The validated and processed array of name objects.
- */
-function processApiResponse(rawArray) {
-    if (!rawArray?.length) return [];
-    const fullBlacklist = appState.userBlacklist.map(b => b.toLowerCase());
-    return rawArray.map(it => {
-      // 1. Strict Schema Validation
-      const schema = appState.mode === 'forge' ? FORGE_RUNTIME_SCHEMA : HARMONIZER_RUNTIME_SCHEMA;
-      const validation = schema.safeParse(it);
-
-      if (!validation.success) {
-          console.warn("Schema validation failed for item:", it, validation.error);
-          return null;
-      }
-
-      const validItem = validation.data;
-
-      let name = (validItem.name || "").toString().trim();
-      if (!name || fullBlacklist.some(b => name.toLowerCase().includes(b))) return null;
-      if (appState.outputAlphabet === 'English (Simplified/No Accents)') {
-        name = name.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-      }
-      const base = { name };
-      if (appState.mode === 'forge') {
-          return { ...base,
-            meaning: (validItem.meaning || "").toString().trim(),
-            roots: (validItem.roots || "").toString().trim(),
-            cluster: (validItem.cluster || "Misc").trim(),
-          };
-      } else {
-          return { ...base,
-            valid: validItem.valid === true,
-            pronunciations: validItem.pronunciations || [],
-            semanticCheck: validItem.semanticCheck || "Pass" // Default to Pass if not provided
-          };
-      }
-    }).filter(Boolean);
-}
 
 /**
  * Constructs the system instruction prompt based on the current generation mode.
@@ -98,16 +16,17 @@ function processApiResponse(rawArray) {
  * @returns {string} The formatted system instruction string.
  */
 function getSystemInstruction() {
+    const baseRules = `NEVER use cliché AI preambles, and NEVER apologize. You MUST output your response strictly as a valid JSON array matching the provided schema, with no additional text or markdown formatting.`;
     if (appState.mode === 'forge') {
         return `ACT as an Expert Linguist specializing in onomastics, morphological derivation, and phonology.
 Construct names by expertly executing phonotactic blending between the requested linguistic roots, guided by the provided themes.
 Ensure every generated name has strict etymological breakdown, deep semantic resonance, and obeys the morphological rules of the source languages.
-NEVER use cliché AI preambles, and NEVER apologize.`;
+${baseRules}`;
     } else {
         return `ACT as an Expert Cross-Cultural Linguistic Analyst and Philologist.
 Identify existing, historically attested names that demonstrate strict orthographic compatibility and valid phonotactics across the requested cultures.
 Verify linguistic validity, eliminate false cognates, provide precise IPA pronunciations for each language, and rigorously ensure cross-cultural semantic appropriateness.
-NEVER use cliché AI preambles, and NEVER apologize.`;
+${baseRules}`;
     }
 }
 
@@ -213,7 +132,7 @@ async function doGenerate() {
                 appState.rawApiResponse = accumulatedText;
 
                 const partialObjects = extractJsonObjects(accumulatedText);
-                const processed = processApiResponse(partialObjects);
+                const processed = processApiResponse(partialObjects, appState.mode, appState.userBlacklist, appState.outputAlphabet);
 
                 if (processed.length > appState.results.length) {
                     appState.results = processed;
