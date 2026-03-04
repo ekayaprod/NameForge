@@ -5,6 +5,9 @@ import { CONFIG } from './config.js';
  * Handles API requests, response parsing, error handling, and maintains conversation history.
  */
 export class GeminiService {
+  /**
+   * Initializes a new instance of GeminiService.
+   */
   constructor() {
     this.apiKey = "";
     this.model = "models/gemini-2.0-flash";

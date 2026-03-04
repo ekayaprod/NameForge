@@ -6,6 +6,7 @@ import { showToast } from './toast.js';
 
 /**
  * Copies all generated names and their primary details to the clipboard.
+ * @returns {Promise<void>}
  */
 export async function handleCopyAll() {
     if (!appState.results.length) { showToast('No results to copy.', true); return; }
@@ -23,6 +24,7 @@ export async function handleCopyAll() {
 
 /**
  * Exports the current generation results to a JSON file.
+ * @returns {void}
  */
 export function handleExport() {
     if (!appState.results.length) { showToast('No results to export.', true); return; }
@@ -38,6 +40,7 @@ export function handleExport() {
 
 /**
  * Exports the current generation results to a CSV file.
+ * @returns {void}
  */
 export function handleExportCsv() {
     if (!appState.results.length) { showToast('No results to export.', true); return; }
@@ -46,6 +49,11 @@ export function handleExportCsv() {
     let headers = [];
     let rows = [];
 
+    /**
+     * Escapes a string for inclusion in a CSV file.
+     * @param {string|null|undefined} str - The string to escape.
+     * @returns {string} The escaped CSV field.
+     */
     const escapeCsv = (str) => {
         if (str === null || str === undefined) return '""';
         const escaped = String(str).replace(/"/g, '""');
@@ -88,6 +96,7 @@ export function handleExportCsv() {
 
 /**
  * Randomizes selected languages and themes, then updates the UI.
+ * @returns {void}
  */
 export function handleSurpriseMe() {
     // Random Languages (2 or 3)
@@ -111,6 +120,7 @@ export function handleSurpriseMe() {
  * Event delegate for clicks within the controls panel.
  * Handles selection and deselection of option chips.
  * @param {Event} event - The click event.
+ * @returns {void}
  */
 export function handleControlsClick(event) {
     const chip = event.target.closest('.chip[data-option]');
@@ -148,6 +158,7 @@ export function handleControlsClick(event) {
  * Updates appState and dynamically modifies the DOM to reflect the change.
  * @param {string} name - The generated name receiving feedback.
  * @param {boolean} isThumbUp - True if liked, false if disliked (blacklisted).
+ * @returns {void}
  */
 export function handleFeedback(name, isThumbUp) {
     const nameLower = name.toLowerCase();
@@ -213,6 +224,7 @@ export function handleFeedback(name, isThumbUp) {
  * Event delegate for clicks within the results panel.
  * Handles copy, like, and dislike actions on individual name cards.
  * @param {Event} event - The click event.
+ * @returns {Promise<void>}
  */
 export async function handleResultsPanelClick(event) {
     const btn = event.target.closest('button[data-action]');

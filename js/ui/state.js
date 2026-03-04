@@ -14,6 +14,7 @@ let generateHandler = null;
 /**
  * Sets the callback handler for the primary generation action.
  * @param {Function} handler - The function to call when generation is triggered.
+ * @returns {void}
  */
 export function setGenerateHandler(handler) {
     generateHandler = handler;

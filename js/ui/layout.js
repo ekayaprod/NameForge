@@ -80,6 +80,10 @@ function createControlsPanel() {
     const addLangBtn = el('button', 'bg-[#0e2436] border border-[#1b3146] px-3 py-2 rounded text-sm small-muted');
     addLangBtn.textContent = 'Add';
 
+    /**
+     * Handles the logic for adding a custom language from the input field.
+     * Validates input, prevents duplicates, and updates state and UI.
+     */
     const handleAddLang = () => {
         const newLang = langInput.value.trim();
         if (newLang.length < 2) return;
