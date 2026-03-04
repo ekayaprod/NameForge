@@ -3,6 +3,17 @@ import assert from 'node:assert';
 import { z } from '../js/validation.js';
 
 describe('Validation Library', () => {
+  describe('safeParse error boundary', () => {
+    it('should catch validation errors and return success=false instead of throwing', () => {
+      const schema = z.string();
+      const result = schema.safeParse(123); // Invalid type: number instead of string
+
+      assert.strictEqual(result.success, false);
+      assert.ok(result.error instanceof Error);
+      assert.match(result.error.message, /Expected string/);
+    });
+  });
+
   describe('z.string()', () => {
     it('should parse valid strings', () => {
       const schema = z.string();
