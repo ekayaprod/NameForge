@@ -147,7 +147,12 @@ export function updateControls() {
     }
     if (ui.controls.generateButton) {
         if (appState.isLoading) {
-            ui.controls.generateButton.innerHTML = `<div class="flex items-center justify-center gap-2"><div class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div><span>Generating...</span></div>`;
+            const container = el('div', 'flex items-center justify-center gap-2');
+            const spinner = el('div', 'w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin');
+            const text = el('span');
+            text.textContent = 'Generating...';
+            container.append(spinner, text);
+            ui.controls.generateButton.replaceChildren(container);
         } else {
             let buttonText = "Generate Names";
             if (appState.sessionGeneratedNames.length > 0) {
@@ -186,7 +191,7 @@ function updateGenerateButtonState() {
  * Updates the selected language chips in the UI.
  */
 export function updateLanguageChips() {
-    ui.controls.languageChips.innerHTML = '';
+    ui.controls.languageChips.replaceChildren();
     const allLangs = [...new Set([...CONFIG.LANG_OPTIONS, ...appState.userLanguages])];
 
     appState.selectedLanguages.forEach(opt => {
@@ -212,7 +217,7 @@ export function updateLanguageChips() {
  * @param {string[]} options - An array of options to render as chips.
  */
 export function updateChipSelector(container, options) {
-    container.innerHTML = '';
+    container.replaceChildren();
     options.forEach(opt => {
         const c = el('button', 'chip'); c.textContent = opt; c.dataset.option = opt;
         const isActive = appState[container.dataset.stateKey]?.includes(opt);
@@ -227,7 +232,7 @@ export function updateChipSelector(container, options) {
  */
 export function updateHistoryModal() {
     const historyContent = ui.modals.history.querySelector('.scrolling-panel');
-    historyContent.innerHTML = '';
+    historyContent.replaceChildren();
 
     // Stats
     const stats = el('div', 'text-xs small-muted mb-4 p-2 bg-black/20 rounded');
@@ -267,7 +272,9 @@ export function updateHistoryModal() {
 
     if (appState.userBlacklist.length > 0) {
         const blacklistSection = el('div', 'mt-4');
-        blacklistSection.innerHTML = `<h4 class="text-sm font-semibold text-red-400 mb-2">👎 Blacklisted Words (${appState.userBlacklist.length})</h4>`;
+        const blacklistHeader = el('h4', 'text-sm font-semibold text-red-400 mb-2');
+        blacklistHeader.textContent = `👎 Blacklisted Words (${appState.userBlacklist.length})`;
+        blacklistSection.append(blacklistHeader);
         const blacklistList = el('div', 'flex flex-wrap gap-2');
         appState.userBlacklist.forEach(word => {
             const chip = el('span', 'chip bg-red-900/30 text-red-300 text-xs');
@@ -280,7 +287,9 @@ export function updateHistoryModal() {
 
     if (appState.sessionGeneratedNames.length > 0) {
         const sessionSection = el('div', 'mt-4');
-        sessionSection.innerHTML = `<h4 class="text-sm font-semibold text-gray-400 mb-2">🧠 Session Memory (showing last 20 of ${appState.sessionGeneratedNames.length})</h4>`;
+        const sessionHeader = el('h4', 'text-sm font-semibold text-gray-400 mb-2');
+        sessionHeader.textContent = `🧠 Session Memory (showing last 20 of ${appState.sessionGeneratedNames.length})`;
+        sessionSection.append(sessionHeader);
         const sessionNote = el('div', 'text-xs small-muted mb-2');
         sessionNote.textContent = 'Names avoided this session to prevent repetition:';
         const sessionList = el('div', 'flex flex-wrap gap-1');
@@ -294,7 +303,9 @@ export function updateHistoryModal() {
     }
 
     if (!appState.likedNames.length && !appState.userBlacklist.length && !appState.sessionGeneratedNames.length) {
-        historyContent.innerHTML = '<div class="text-center small-muted py-8">No session data yet. Generate some names to see feedback history!</div>';
+        const noData = el('div', 'text-center small-muted py-8');
+        noData.textContent = 'No session data yet. Generate some names to see feedback history!';
+        historyContent.replaceChildren(noData);
     }
 }
 
@@ -310,20 +321,36 @@ export function toggleModeUI(mode) {
     ui.controls.themesSection.style.display = isForge ? 'block' : 'none';
 
     ui.results.header.className = "flex justify-between items-end";
-    ui.results.header.innerHTML = `
-        <div>
-            <h2 class="text-lg font-semibold">${isForge ? 'Results' : 'Harmonized Names'}</h2>
-            <div class="small-muted">${isForge ? 'Poetic, culturally coined names' : 'Names that work across cultures'}</div>
-        </div>
-        <div class="flex gap-2">
-                <button id="copy-all-btn" class="chip text-xs" title="Copy all names">Copy All</button>
-                <button id="export-btn" class="chip text-xs" title="Download JSON">JSON</button>
-                <button id="export-csv-btn" class="chip text-xs" title="Download CSV">CSV</button>
-        </div>
-    `;
-    ui.results.header.querySelector('#copy-all-btn').addEventListener('click', handleCopyAll);
-    ui.results.header.querySelector('#export-btn').addEventListener('click', handleExport);
-    ui.results.header.querySelector('#export-csv-btn').addEventListener('click', handleExportCsv);
+
+    const titleContainer = el('div');
+    const headerTitle = el('h2', 'text-lg font-semibold');
+    headerTitle.textContent = isForge ? 'Results' : 'Harmonized Names';
+    const headerSubtitle = el('div', 'small-muted');
+    headerSubtitle.textContent = isForge ? 'Poetic, culturally coined names' : 'Names that work across cultures';
+    titleContainer.append(headerTitle, headerSubtitle);
+
+    const btnContainer = el('div', 'flex gap-2');
+    const copyAllBtn = el('button', 'chip text-xs');
+    copyAllBtn.id = 'copy-all-btn';
+    copyAllBtn.title = 'Copy all names';
+    copyAllBtn.textContent = 'Copy All';
+    copyAllBtn.addEventListener('click', handleCopyAll);
+
+    const exportBtn = el('button', 'chip text-xs');
+    exportBtn.id = 'export-btn';
+    exportBtn.title = 'Download JSON';
+    exportBtn.textContent = 'JSON';
+    exportBtn.addEventListener('click', handleExport);
+
+    const exportCsvBtn = el('button', 'chip text-xs');
+    exportCsvBtn.id = 'export-csv-btn';
+    exportCsvBtn.title = 'Download CSV';
+    exportCsvBtn.textContent = 'CSV';
+    exportCsvBtn.addEventListener('click', handleExportCsv);
+
+    btnContainer.append(copyAllBtn, exportBtn, exportCsvBtn);
+
+    ui.results.header.replaceChildren(titleContainer, btnContainer);
 
     appState.results = []; updateResultsPanel(); updateControls();
 }

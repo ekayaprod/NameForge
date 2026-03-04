@@ -50,7 +50,15 @@ function createControlsPanel() {
     left.append(createHeader(onReset, onHistory, onSettings));
 
     const modeSwitcher = el('div', 'mode-toggle mt-4');
-    modeSwitcher.innerHTML = `<button data-mode="forge" class="${appState.mode === 'forge' ? 'active' : ''}">Forge</button><button data-mode="harmonizer" class="${appState.mode === 'harmonizer' ? 'active' : ''}">Harmonizer</button>`;
+    const forgeBtn = el('button');
+    forgeBtn.dataset.mode = 'forge';
+    if (appState.mode === 'forge') forgeBtn.classList.add('active');
+    forgeBtn.textContent = 'Forge';
+    const harmonizerBtn = el('button');
+    harmonizerBtn.dataset.mode = 'harmonizer';
+    if (appState.mode === 'harmonizer') harmonizerBtn.classList.add('active');
+    harmonizerBtn.textContent = 'Harmonizer';
+    modeSwitcher.append(forgeBtn, harmonizerBtn);
     left.append(modeSwitcher);
 
     const controlsContainer = el('div', 'flex flex-col gap-4 mt-4');
@@ -58,7 +66,10 @@ function createControlsPanel() {
     const coreQuerySection = el('details', 'border border-[#0e2334] rounded-lg');
     coreQuerySection.open = true;
     const coreQuerySummary = el('summary', 'text-md font-semibold p-3 cursor-pointer list-none');
-    coreQuerySummary.innerHTML = `Step 1: Define Core Query <span class="small-muted font-normal">(Languages & Context)</span>`;
+    coreQuerySummary.textContent = 'Step 1: Define Core Query ';
+    const coreQuerySpan = el('span', 'small-muted font-normal');
+    coreQuerySpan.textContent = '(Languages & Context)';
+    coreQuerySummary.append(coreQuerySpan);
     coreQuerySection.append(coreQuerySummary);
 
     const coreQueryContent = el('div', 'p-3 border-t border-[#0e2334] flex flex-col gap-4');
@@ -119,14 +130,27 @@ function createControlsPanel() {
 
     const flavorSection = el('div', 'flex flex-col gap-4 mt-4');
     const flavorHeader = el('div', 'text-md font-semibold');
-    flavorHeader.innerHTML = `Step 2: Refine Flavor <span class="small-muted font-normal">(Style, Themes, etc.)</span>`;
+    flavorHeader.textContent = 'Step 2: Refine Flavor ';
+    const flavorSpan = el('span', 'small-muted font-normal');
+    flavorSpan.textContent = '(Style, Themes, etc.)';
+    flavorHeader.append(flavorSpan);
     flavorSection.append(flavorHeader);
 
     ui.controls.forgeContainer = el('div', 'flex flex-col gap-4');
     ui.controls.harmonizerContainer = el('div', 'flex flex-col gap-4');
 
     ui.controls.harmonizerToggleSection = el('div');
-    ui.controls.harmonizerToggleSection.innerHTML = `<div class="toggle-switch"><span class="text-sm font-medium">Proper noun in all selected languages</span><input type="checkbox" class="toggle-switch-input" id="harmonizer-toggle"><label class="toggle-switch-label" for="harmonizer-toggle">Toggle</label></div>`;
+    const toggleContainer = el('div', 'toggle-switch');
+    const toggleLabelSpan = el('span', 'text-sm font-medium');
+    toggleLabelSpan.textContent = 'Proper noun in all selected languages';
+    const toggleInput = el('input', 'toggle-switch-input');
+    toggleInput.type = 'checkbox';
+    toggleInput.id = 'harmonizer-toggle';
+    const toggleLabel = el('label', 'toggle-switch-label');
+    toggleLabel.htmlFor = 'harmonizer-toggle';
+    toggleLabel.textContent = 'Toggle';
+    toggleContainer.append(toggleLabelSpan, toggleInput, toggleLabel);
+    ui.controls.harmonizerToggleSection.append(toggleContainer);
     ui.controls.harmonizerContainer.append(ui.controls.harmonizerToggleSection);
 
     ui.controls.themesSection = createControlSection('Themes (choose 1–2)', el('div', 'flex flex-wrap gap-2'));
@@ -169,7 +193,7 @@ function createResultsPanel() {
  * creates necessary modals, and binds global event listeners.
  */
 export function initLayout() {
-    ui.root.innerHTML = '';
+    ui.root.replaceChildren();
     const appWrap = el('div','max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6');
 
     const { left, modeSwitcher } = createControlsPanel();
@@ -211,12 +235,19 @@ export function initLayout() {
 
     // Prompt Modal (Now shows User + System)
     const promptContent = el('div', 'flex flex-col gap-2');
-    promptContent.innerHTML = `
-        <div class="text-xs small-muted">System Instruction</div>
-        <textarea readonly id="system-prompt-view" class="w-full h-24 bg-[#0b1622] border border-[#223447] rounded p-2 text-xs font-mono"></textarea>
-        <div class="text-xs small-muted mt-2">User Message</div>
-        <textarea readonly id="user-prompt-view" class="w-full h-32 bg-[#0b1622] border border-[#223447] rounded p-2 text-xs font-mono"></textarea>
-    `;
+    const sysInstLabel = el('div', 'text-xs small-muted');
+    sysInstLabel.textContent = 'System Instruction';
+    const sysPromptView = el('textarea', 'w-full h-24 bg-[#0b1622] border border-[#223447] rounded p-2 text-xs font-mono');
+    sysPromptView.readOnly = true;
+    sysPromptView.id = 'system-prompt-view';
+
+    const userMsgLabel = el('div', 'text-xs small-muted mt-2');
+    userMsgLabel.textContent = 'User Message';
+    const userPromptView = el('textarea', 'w-full h-32 bg-[#0b1622] border border-[#223447] rounded p-2 text-xs font-mono');
+    userPromptView.readOnly = true;
+    userPromptView.id = 'user-prompt-view';
+
+    promptContent.append(sysInstLabel, sysPromptView, userMsgLabel, userPromptView);
     const promptCloseBtn = el('button', 'chip');
     promptCloseBtn.textContent = 'Close';
     promptCloseBtn.addEventListener('click', () => toggleModal(ui.modals.prompt, false));
@@ -224,17 +255,24 @@ export function initLayout() {
 
     // Welcome Modal
     const welcomeContent = el('div', 'flex flex-col gap-3 text-sm small-muted');
-    welcomeContent.innerHTML = `
-        <p>Welcome to NameForge! This app helps you create unique names by blending languages and themes.</p>
-        <div class="p-3 bg-black/20 rounded-md">
-        <strong class="text-base text-gray-200">How it works:</strong>
-        <ul class="list-disc list-inside mt-2 space-y-1">
-            <li><strong>Forge Mode:</strong> Creates new, poetic names from language roots and themes.</li>
-            <li><strong>Harmonizer Mode:</strong> Finds existing names that work across multiple cultures.</li>
-        </ul>
-        </div>
-        <p>To generate names, the app uses the Google Gemini API. You'll need a free API key to get started.</p>
-    `;
+    const p1 = el('p');
+    p1.textContent = 'Welcome to NameForge! This app helps you create unique names by blending languages and themes.';
+    const howItWorksBox = el('div', 'p-3 bg-black/20 rounded-md');
+    const strongTitle = el('strong', 'text-base text-gray-200');
+    strongTitle.textContent = 'How it works:';
+    const ul = el('ul', 'list-disc list-inside mt-2 space-y-1');
+    const liForge = el('li');
+    const strongForge = el('strong'); strongForge.textContent = 'Forge Mode:';
+    liForge.append(strongForge, document.createTextNode(' Creates new, poetic names from language roots and themes.'));
+    const liHarmonizer = el('li');
+    const strongHarmonizer = el('strong'); strongHarmonizer.textContent = 'Harmonizer Mode:';
+    liHarmonizer.append(strongHarmonizer, document.createTextNode(' Finds existing names that work across multiple cultures.'));
+    ul.append(liForge, liHarmonizer);
+    howItWorksBox.append(strongTitle, ul);
+    const p2 = el('p');
+    p2.textContent = 'To generate names, the app uses the Google Gemini API. You\'ll need a free API key to get started.';
+    welcomeContent.append(p1, howItWorksBox, p2);
+
     const welcomeApiKeyInput = el('input', 'w-full bg-[#0b1622] border border-[#223447] rounded px-3 py-2 text-sm');
     welcomeApiKeyInput.placeholder = 'Paste your Gemini API key here';
     welcomeApiKeyInput.value = appState.apiKey;
