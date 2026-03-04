@@ -30,6 +30,7 @@ document.head.appendChild(style);
  * Toggles the visibility of a modal dialog.
  * @param {HTMLElement} modal - The modal element to toggle.
  * @param {boolean} show - True to show the modal, false to hide it.
+ * @returns {void}
  */
 export function toggleModal(modal, show) {
     if (modal) {
@@ -79,6 +80,7 @@ function appendResult(item) {
 /**
  * Updates the results panel in the UI with the latest generated names.
  * Uses a differential rendering strategy based on renderedCount to improve performance.
+ * @returns {void}
  */
 export function updateResultsPanel() {
     // 1. Handle Reset/Clear or Error conditions where we wipe the panel
@@ -139,6 +141,7 @@ export function updateResultsPanel() {
 
 /**
  * Updates the UI controls (chips, selects, inputs) to reflect the current appState.
+ * @returns {void}
  */
 export function updateControls() {
     updateLanguageChips();
@@ -184,6 +187,7 @@ function updateGenerateButtonState() {
 
 /**
  * Updates the selected language chips in the UI.
+ * @returns {void}
  */
 export function updateLanguageChips() {
     ui.controls.languageChips.innerHTML = '';
@@ -210,6 +214,7 @@ export function updateLanguageChips() {
  * Renders a list of chips into a container, indicating which ones are selected based on appState.
  * @param {HTMLElement} container - The container element to append chips to.
  * @param {string[]} options - An array of options to render as chips.
+ * @returns {void}
  */
 export function updateChipSelector(container, options) {
     container.innerHTML = '';
@@ -224,6 +229,7 @@ export function updateChipSelector(container, options) {
 
 /**
  * Updates the content of the history modal with liked and blacklisted names.
+ * @returns {void}
  */
 export function updateHistoryModal() {
     const historyContent = ui.modals.history.querySelector('.scrolling-panel');
@@ -301,6 +307,7 @@ export function updateHistoryModal() {
 /**
  * Toggles the UI elements visibility based on the selected generation mode.
  * @param {string} mode - The current mode ("forge" or "harmonizer").
+ * @returns {void}
  */
 export function toggleModeUI(mode) {
     const isForge = mode === 'forge';

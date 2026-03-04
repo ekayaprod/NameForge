@@ -44,6 +44,7 @@ let timeoutHandle = null;
  * Persists the current application state to localStorage.
  * Skips transient properties (isLoading, error, rawApiResponse, generationController, renderedCount).
  * Uses requestIdleCallback for performance, falling back to setTimeout.
+ * @returns {void}
  */
 export function saveState() {
   const performSave = () => {
@@ -69,6 +70,7 @@ export function saveState() {
 /**
  * Loads the application state from localStorage.
  * Merges loaded data with default values to ensure backward compatibility and state integrity.
+ * @returns {void}
  */
 export function loadState() {
     try {
@@ -107,6 +109,7 @@ export const debouncedSaveState = debounce(saveState, 500);
  * Logs an error message to the application state's recent errors list.
  * Maintains a maximum of 5 recent errors by shifting the oldest out.
  * @param {string} message - The error message to log.
+ * @returns {void}
  */
 export function logError(message) {
   if (!appState.recentErrors) appState.recentErrors = [];
