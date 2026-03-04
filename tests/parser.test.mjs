@@ -1,41 +1,103 @@
-import { test } from 'node:test';
+import { test, describe } from 'node:test';
 import assert from 'node:assert';
 import { extractJsonObjects } from '../js/utils.js';
+import { parseApiResponse, processApiResponse } from '../js/parser.js';
 
-test('extractJsonObjects extracts complete objects from a JSON array string', () => {
-    const text = '[{"name": "Name1"}, {"name": "Name2"}]';
-    const results = extractJsonObjects(text);
-    assert.deepStrictEqual(results, [{name: "Name1"}, {name: "Name2"}]);
+describe('extractJsonObjects', () => {
+    test('extracts complete objects from a JSON array string', () => {
+        const text = '[{"name": "Name1"}, {"name": "Name2"}]';
+        const results = extractJsonObjects(text);
+        assert.deepStrictEqual(results, [{name: "Name1"}, {name: "Name2"}]);
+    });
+
+    test('extracts objects from partial string', () => {
+        const text = '[{"name": "Name1"}, {"name": "Na';
+        const results = extractJsonObjects(text);
+        assert.deepStrictEqual(results, [{name: "Name1"}]);
+    });
+
+    test('handles nested objects', () => {
+        const text = '[{"name": "Name1", "meta": {"foo": "bar"}}]';
+        const results = extractJsonObjects(text);
+        assert.deepStrictEqual(results, [{name: "Name1", meta: {foo: "bar"}}]);
+    });
+
+    test('handles escaped quotes', () => {
+        const text = '[{"name": "Name\\"1"}]';
+        const results = extractJsonObjects(text);
+        assert.deepStrictEqual(results, [{name: 'Name"1'}]);
+    });
+
+    test('handles multiple partial chunks simulation', () => {
+        let text = '[';
+        assert.deepStrictEqual(extractJsonObjects(text), []);
+
+        text += '{"name": "A"';
+        assert.deepStrictEqual(extractJsonObjects(text), []);
+
+        text += '}';
+        assert.deepStrictEqual(extractJsonObjects(text), [{name: "A"}]);
+
+        text += ', {"name": "B"}';
+        assert.deepStrictEqual(extractJsonObjects(text), [{name: "A"}, {name: "B"}]);
+    });
 });
 
-test('extractJsonObjects extracts objects from partial string', () => {
-    const text = '[{"name": "Name1"}, {"name": "Na';
-    const results = extractJsonObjects(text);
-    assert.deepStrictEqual(results, [{name: "Name1"}]);
+describe('parseApiResponse', () => {
+    test('parses perfectly formed JSON array', () => {
+        const json = '[{"name": "test"}]';
+        const result = parseApiResponse(json);
+        assert.deepStrictEqual(result, [{name: "test"}]);
+    });
+
+    test('recovers from markdown formatting', () => {
+        const json = '```json\n[{"name": "test"}]\n```';
+        const result = parseApiResponse(json);
+        assert.deepStrictEqual(result, [{name: "test"}]);
+    });
+
+    test('returns empty array for completely invalid string', () => {
+        const result = parseApiResponse('not a json string at all');
+        assert.deepStrictEqual(result, []);
+    });
 });
 
-test('extractJsonObjects handles nested objects', () => {
-    const text = '[{"name": "Name1", "meta": {"foo": "bar"}}]';
-    const results = extractJsonObjects(text);
-    assert.deepStrictEqual(results, [{name: "Name1", meta: {foo: "bar"}}]);
-});
+describe('processApiResponse', () => {
+    test('validates perfectly formed Forge mode objects', () => {
+        const raw = [{ name: "ValidName", roots: "A + B", meaning: "Test meaning", cluster: "Test Cluster" }];
+        const result = processApiResponse(raw, 'forge');
+        assert.deepStrictEqual(result, raw);
+    });
 
-test('extractJsonObjects handles escaped quotes', () => {
-    const text = '[{"name": "Name\\"1"}]';
-    const results = extractJsonObjects(text);
-    assert.deepStrictEqual(results, [{name: 'Name"1'}]);
-});
+    test('gracefully handles and filters out hallucinated keys and malformed objects', () => {
+        const raw = [
+            { name: "ValidName", roots: "A + B", meaning: "Test", cluster: "Test" }, // Valid
+            { name: "InvalidName" }, // Missing required fields
+            { not_a_name: "Hallucination" } // Completely wrong structure
+        ];
+        const result = processApiResponse(raw, 'forge');
+        assert.strictEqual(result.length, 1);
+        assert.strictEqual(result[0].name, "ValidName");
+    });
 
-test('extractJsonObjects handles multiple partial chunks simulation', () => {
-    let text = '[';
-    assert.deepStrictEqual(extractJsonObjects(text), []);
+    test('validates Harmonizer mode objects correctly', () => {
+        const raw = [{
+            name: "HarmonizerName",
+            valid: true,
+            pronunciations: [{ lang: "en", phonetic: "test" }],
+            semanticCheck: "Pass"
+        }];
+        const result = processApiResponse(raw, 'harmonizer');
+        assert.deepStrictEqual(result, raw);
+    });
 
-    text += '{"name": "A"';
-    assert.deepStrictEqual(extractJsonObjects(text), []);
-
-    text += '}';
-    assert.deepStrictEqual(extractJsonObjects(text), [{name: "A"}]);
-
-    text += ', {"name": "B"}';
-    assert.deepStrictEqual(extractJsonObjects(text), [{name: "A"}, {name: "B"}]);
+    test('applies blacklist securely', () => {
+        const raw = [
+            { name: "BadName", roots: "A", meaning: "A", cluster: "A" },
+            { name: "GoodName", roots: "B", meaning: "B", cluster: "B" }
+        ];
+        const result = processApiResponse(raw, 'forge', ["bad"]);
+        assert.strictEqual(result.length, 1);
+        assert.strictEqual(result[0].name, "GoodName");
+    });
 });

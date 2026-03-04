@@ -1,0 +1,3 @@
+## 2026-03-04 - 🎛️ Polygraph - [Strict JSON Enforcement]
+**Learning:** Raw string parsing from LLM outputs often falls victim to preambles, trailing markdown formatting, and hallucinated keys that bypass unstructured `JSON.parse` logic. When parsing logic depends on application state (e.g. modes), it is highly prone to untestable DOM side effects.
+**Action:** Decoupled `parseApiResponse` and `processApiResponse` from UI logic to make them testable. Added explicit system instructions demanding strict JSON array formatting without preambles, and built out rigorous unit tests (`tests/parser.test.mjs`) mocking corrupted and malformed structural data to prove the parsing layer holds.
