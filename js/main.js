@@ -39,24 +39,30 @@ ${baseRules}`;
 function getUserPrompt(count) {
     const { selectedLanguages, likedNames, selectedThemes, selectedStyle, gender, userBlacklist, sessionGeneratedNames, mode, harmonizerIsAllLanguages, surname, siblingNames, firstNameForMiddle } = appState;
 
-    const context = [];
-    if (likedNames.length > 0) context.push(`INSPIRATION: ${likedNames.map(n => n.name).join(', ')}.`);
-    if (userBlacklist.length > 0) context.push(`BLACKLIST: ${userBlacklist.join(', ')}.`);
-
     // Sanitize Inputs
+    const safeSelectedLanguages = selectedLanguages.map(sanitizeInput);
+    const safeLikedNames = likedNames.map(n => sanitizeInput(n.name));
+    const safeSelectedThemes = selectedThemes.map(sanitizeInput);
+    const safeSelectedStyle = sanitizeInput(selectedStyle);
+    const safeGender = sanitizeInput(gender);
+    const safeUserBlacklist = userBlacklist.map(sanitizeInput);
     const safeSurname = sanitizeInput(surname);
     const safeSiblingNames = sanitizeInput(siblingNames);
     const safeFirstNameForMiddle = sanitizeInput(firstNameForMiddle);
 
+    const context = [];
+    if (safeLikedNames.length > 0) context.push(`INSPIRATION: ${safeLikedNames.join(', ')}.`);
+    if (safeUserBlacklist.length > 0) context.push(`BLACKLIST: ${safeUserBlacklist.join(', ')}.`);
+
     let task = "";
     if (mode === 'forge') {
-       task = `CONSTRUCT ${count} structurally valid, ${gender} names by meticulously SYNTHESIZING phonemes from: ${selectedLanguages.join(' + ')}. Incorporate semantic elements from THEMES: ${selectedThemes.join(', ')}. Adhere to STYLE: ${selectedStyle}.`;
+       task = `CONSTRUCT ${count} structurally valid, ${safeGender} names by meticulously SYNTHESIZING phonemes from: ${safeSelectedLanguages.join(' + ')}. Incorporate semantic elements from THEMES: ${safeSelectedThemes.join(', ')}. Adhere to STYLE: ${safeSelectedStyle}.`;
        if (safeSurname) task += ` Optimize rhythmic and phonotactic flow when paired with SURNAME CONTEXT: ${safeSurname}.`;
        if (safeSiblingNames) task += ` Ensure morphological and thematic consistency with SIBLING CONTEXT: ${safeSiblingNames}.`;
        if (safeFirstNameForMiddle) task += ` Ensure rhythmic flow when functioning as a middle name for FIRST NAME: ${safeFirstNameForMiddle}.`;
     } else {
        const strictness = harmonizerIsAllLanguages ? "all" : "multiple";
-       task = `IDENTIFY ${count} distinct ${gender} names that are strictly orthographically and semantically compatible with ${strictness} of the following linguistic origins: ${selectedLanguages.join(', ')}.`;
+       task = `IDENTIFY ${count} distinct ${safeGender} names that are strictly orthographically and semantically compatible with ${strictness} of the following linguistic origins: ${safeSelectedLanguages.join(', ')}.`;
     }
 
     return `${context.join('\n')}
