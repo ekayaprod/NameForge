@@ -1,5 +1,9 @@
 // js/validation.js
 
+/**
+ * Base class for all Zod-like schema validators.
+ * Provides standard parsing, safe parsing, and optionality features.
+ */
 class ZodType {
   /**
    * Parses the given value according to the schema.
@@ -31,6 +35,10 @@ class ZodType {
   }
 }
 
+/**
+ * Schema validator for string values.
+ * Extends the base ZodType to enforce string type checking.
+ */
 class ZodString extends ZodType {
   /**
    * Parses the given value to ensure it is a string.
@@ -44,6 +52,10 @@ class ZodString extends ZodType {
   }
 }
 
+/**
+ * Schema validator for boolean values.
+ * Extends the base ZodType to enforce boolean type checking.
+ */
 class ZodBoolean extends ZodType {
   /**
    * Parses the given value to ensure it is a boolean.
@@ -57,6 +69,10 @@ class ZodBoolean extends ZodType {
   }
 }
 
+/**
+ * Schema validator for array values.
+ * Extends the base ZodType to enforce array type checking and validate each item against a provided sub-schema.
+ */
 class ZodArray extends ZodType {
   /**
    * Creates an array schema validator.
@@ -85,6 +101,10 @@ class ZodArray extends ZodType {
   }
 }
 
+/**
+ * Schema validator for object values.
+ * Extends the base ZodType to enforce object type checking and validate properties against a defined shape.
+ */
 class ZodObject extends ZodType {
   /**
    * Creates an object schema validator.
@@ -120,6 +140,10 @@ class ZodObject extends ZodType {
   }
 }
 
+/**
+ * Schema validator wrapper that allows undefined or null values.
+ * If a value is provided, it delegates validation to the underlying schema.
+ */
 class ZodOptional extends ZodType {
   /**
    * Creates an optional schema validator.
