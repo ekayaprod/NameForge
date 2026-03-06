@@ -16,17 +16,14 @@ import { parseApiResponse, processApiResponse } from './parser.js';
  * @returns {string} The formatted system instruction string.
  */
 function getSystemInstruction() {
-    const baseRules = `NEVER use cliché AI preambles, and NEVER apologize. You MUST output your response strictly as a valid JSON array matching the provided schema, with no additional text or markdown formatting.`;
     if (appState.mode === 'forge') {
         return `ACT as an Expert Linguist specializing in onomastics, morphological derivation, and phonology.
 Construct names by expertly executing phonotactic blending between the requested linguistic roots, guided by the provided themes.
-Ensure every generated name has strict etymological breakdown, deep semantic resonance, and obeys the morphological rules of the source languages.
-${baseRules}`;
+Ensure every generated name has strict etymological breakdown, deep semantic resonance, and obeys the morphological rules of the source languages.`;
     } else {
         return `ACT as an Expert Cross-Cultural Linguistic Analyst and Philologist.
 Identify existing, historically attested names that demonstrate strict orthographic compatibility and valid phonotactics across the requested cultures.
-Verify linguistic validity, eliminate false cognates, provide precise IPA pronunciations for each language, and rigorously ensure cross-cultural semantic appropriateness.
-${baseRules}`;
+Verify linguistic validity, eliminate false cognates, provide precise IPA pronunciations for each language, and rigorously ensure cross-cultural semantic appropriateness.`;
     }
 }
 
