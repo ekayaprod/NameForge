@@ -43,6 +43,7 @@ export function toggleModal(modal, show) {
  * Appends a generated name result into the UI results panel.
  * Groups generated names into thematic clusters in Forge mode.
  * @param {Object} item - The validated name object to render and append.
+ * @returns {void}
  */
 function appendResult(item) {
     const card = createNameCard(item);
