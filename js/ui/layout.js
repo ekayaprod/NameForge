@@ -195,6 +195,7 @@ function createResultsPanel() {
  * Initializes the main application layout.
  * Clears the root element, sets up the grid layout, constructs controls and results panels,
  * creates necessary modals, and binds global event listeners.
+ * @returns {void}
  */
 export function initLayout() {
     ui.root.replaceChildren();
