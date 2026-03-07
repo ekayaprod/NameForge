@@ -1,6 +1,16 @@
 /**
  * Global configuration constants for the application.
  * Defines API endpoints, versioning, constraints, and available options for generation.
+ *
+ * @type {{
+ *   API_BASE_URL: string,
+ *   APP_VERSION: string,
+ *   MAX_SESSION_HISTORY: number,
+ *   LANG_OPTIONS: string[],
+ *   THEME_OPTIONS: string[],
+ *   STYLE_OPTIONS: string[],
+ *   MODEL_OPTIONS: Array<{value: string, text: string}>
+ * }}
  */
 export const CONFIG = {
   API_BASE_URL: "https://generativelanguage.googleapis.com/v1beta/",

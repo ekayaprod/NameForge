@@ -28,6 +28,7 @@ export class GeminiService {
   /**
    * Clears the conversation history to start a fresh context.
    * Useful when switching modes or changing significant settings.
+   * @returns {void}
    */
   resetHistory() {
     this.history = [];
@@ -75,6 +76,7 @@ export class GeminiService {
    * @param {string} contextHash - A hash/string representing the current settings (langs, themes).
    * @param {object} config - Generation config (temp, etc).
    * @param {AbortSignal} signal - For cancellation.
+   * @returns {Promise<string>} The generated text response.
    */
   async generate(userPrompt, systemInstructionText, contextHash, config = {}, signal) {
     // If the context (settings) changed significantly, we might want to reset history.

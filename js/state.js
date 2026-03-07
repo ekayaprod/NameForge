@@ -5,6 +5,37 @@ import { debounce } from './utils.js';
  * The central, mutable global state object for the application.
  * Holds all user preferences, generation results, and transient UI states.
  * Properties are selectively persisted to localStorage.
+ *
+ * @type {{
+ *   version: string,
+ *   mode: string,
+ *   harmonizerIsAllLanguages: boolean,
+ *   apiKey: string,
+ *   isLoading: boolean,
+ *   error: Error | string | null,
+ *   results: Array<Object>,
+ *   renderedCount: number,
+ *   likedNames: Array<Object>,
+ *   selectedLanguages: string[],
+ *   selectedThemes: string[],
+ *   selectedStyle: string,
+ *   gender: string,
+ *   surname: string,
+ *   siblingNames: string,
+ *   firstNameForMiddle: string,
+ *   userLanguages: string[],
+ *   userBlacklist: string[],
+ *   rawApiResponse: string | null,
+ *   sessionGeneratedNames: string[],
+ *   model: string,
+ *   outputAlphabet: string,
+ *   generationController: AbortController | null,
+ *   recentErrors: string[],
+ *   hasSeenIntro: boolean,
+ *   defaultCount: number,
+ *   apiTimeout: number,
+ *   maxOutputTokens: number
+ * }}
  */
 export const appState = {
   version: CONFIG.APP_VERSION,
