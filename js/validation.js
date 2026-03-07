@@ -168,6 +168,13 @@ class ZodOptional extends ZodType {
 /**
  * A lightweight, zero-dependency schema validation utility mimicking the Zod API.
  * Provides runtime type checking and validation for structured data.
+ *
+ * @type {{
+ *   string: () => ZodString,
+ *   boolean: () => ZodBoolean,
+ *   array: (schema: ZodType) => ZodArray,
+ *   object: (shape: Object.<string, ZodType>) => ZodObject
+ * }}
  */
 export const z = {
   string: () => new ZodString(),

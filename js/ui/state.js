@@ -1,6 +1,13 @@
 /**
  * A central object holding references to significant DOM elements and UI sections.
  * Acts as an organizational registry for components initialized during layout.
+ *
+ * @type {{
+ *   root: HTMLElement | null,
+ *   controls: Object.<string, HTMLElement>,
+ *   results: Object.<string, HTMLElement>,
+ *   modals: Object.<string, HTMLElement>
+ * }}
  */
 export const ui = {
     root: document.getElementById('app'),
