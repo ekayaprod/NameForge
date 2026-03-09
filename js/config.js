@@ -21,6 +21,6 @@ export const CONFIG = {
   STYLE_OPTIONS: ["Lyrical & Melodic","Archaic & Mythic","Minimalist & Modern","Heroic & Resonant", "Elegant & Refined", "Grounded & Earthy", "Mystical & Ethereal"],
   MODEL_OPTIONS: [
     { value: "models/gemini-2.0-flash", text: "2.0 Flash (Fast & Modern)" },
-    { value: "models/gemini-2.0-pro-exp", text: "2.0 Pro Exp (Premium)" }
+    { value: "models/gemini-2.5-pro", text: "2.5 Pro (Premium)" }
   ]
 };
