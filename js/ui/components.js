@@ -346,7 +346,7 @@ export function createMarkdownStreamDisplay(rawResponse) {
 
     // Parse current markdown state
     const content = parseMarkdownToDOM(rawResponse);
-    content.classList.add('transition-all', 'duration-300');
+    content.classList.add('transition-all', 'duration-300', 'markdown-content');
 
     container.append(header, content);
     return container;

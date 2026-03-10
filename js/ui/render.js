@@ -3,6 +3,7 @@ import { appState } from '../state.js';
 import { CONFIG } from '../config.js';
 import { el } from '../utils.js';
 import { createNameCard, createLoadingSkeleton, createErrorDisplay, createJsonErrorDisplay, createStreamSpinner, createMarkdownStreamDisplay } from './components.js';
+import { parseMarkdownToDOM } from './markdown.js';
 import { geminiService } from '../api.js';
 import { handleCopyAll, handleExport, handleExportCsv } from './actions.js';
 
@@ -89,9 +90,18 @@ export function updateResultsPanel() {
         if (appState.isLoading) {
             if (appState.rawApiResponse) {
                 // If we have started receiving text but haven't parsed a full JSON object yet
-                const streamDisplay = createMarkdownStreamDisplay(appState.rawApiResponse);
-                // Keep the same skeleton structure if it exists
-                ui.results.panel.replaceChildren(streamDisplay);
+                const existingDisplay = document.getElementById('markdown-stream-display');
+                if (existingDisplay) {
+                    const contentContainer = existingDisplay.querySelector('.markdown-content');
+                    if (contentContainer) {
+                        const parsed = parseMarkdownToDOM(appState.rawApiResponse);
+                        // Replace children of existing container to preserve CSS transitions
+                        contentContainer.replaceChildren(...parsed.childNodes);
+                    }
+                } else {
+                    const streamDisplay = createMarkdownStreamDisplay(appState.rawApiResponse);
+                    ui.results.panel.replaceChildren(streamDisplay);
+                }
             } else {
                 ui.results.panel.replaceChildren(createLoadingSkeleton());
             }
