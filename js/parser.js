@@ -1,5 +1,6 @@
 import { logError } from './state.js';
 import { FORGE_RUNTIME_SCHEMA, HARMONIZER_RUNTIME_SCHEMA } from './schemas.js';
+import { z } from './validation.js';
 
 /**
  * Parses the raw text response from the API into a JSON array.
@@ -7,12 +8,13 @@ import { FORGE_RUNTIME_SCHEMA, HARMONIZER_RUNTIME_SCHEMA } from './schemas.js';
  * @param {string} text - The raw text response from the API.
  * @returns {Array<Object>} The parsed array of generated name objects.
  */
-export function parseApiResponse(text) {
+export function parseApiResponse(text, mode = 'forge') {
     if (!text) return [];
+    const schema = z.array(mode === 'forge' ? FORGE_RUNTIME_SCHEMA : HARMONIZER_RUNTIME_SCHEMA);
+
     try {
       const parsed = JSON.parse(text);
-      if (Array.isArray(parsed)) return parsed;
-      return [];
+      return schema.parse(parsed);
     } catch (e) {
       console.warn("Direct JSON parse failed, attempting cleanup:", e);
       let cleanedText = text;
@@ -30,7 +32,7 @@ export function parseApiResponse(text) {
       cleanedText = cleanedText.trim();
       try {
           const parsed = JSON.parse(cleanedText);
-          if (Array.isArray(parsed)) return parsed;
+          return schema.parse(parsed);
       } catch(e2) {
           console.warn("Cleanup parse failed:", e2);
       }
