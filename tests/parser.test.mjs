@@ -23,7 +23,7 @@ describe('extractJsonObjects', () => {
     });
 
     test('handles escaped quotes', () => {
-        const text = '[{"name": "Name\\"1"}]';
+        const text = '[{"name": "Name\\\"1"}]';
         const results = extractJsonObjects(text);
         assert.deepStrictEqual(results, [{name: 'Name"1'}]);
     });
@@ -45,20 +45,32 @@ describe('extractJsonObjects', () => {
 
 describe('parseApiResponse', () => {
     test('parses perfectly formed JSON array', () => {
-        const json = '[{"name": "test"}]';
-        const result = parseApiResponse(json);
-        assert.deepStrictEqual(result, [{name: "test"}]);
+        const json = '[{"name": "test", "roots": "test", "meaning": "test", "cluster": "test"}]';
+        const result = parseApiResponse(json, 'forge');
+        assert.deepStrictEqual(result, [{"name": "test", "roots": "test", "meaning": "test", "cluster": "test"}]);
     });
 
     test('recovers from markdown formatting', () => {
-        const json = '```json\n[{"name": "test"}]\n```';
-        const result = parseApiResponse(json);
-        assert.deepStrictEqual(result, [{name: "test"}]);
+        const json = '```json\n[{"name": "test", "roots": "test", "meaning": "test", "cluster": "test"}]\n```';
+        const result = parseApiResponse(json, 'forge');
+        assert.deepStrictEqual(result, [{"name": "test", "roots": "test", "meaning": "test", "cluster": "test"}]);
     });
 
     test('returns empty array for completely invalid string', () => {
-        const result = parseApiResponse('not a json string at all');
+        const result = parseApiResponse('not a json string at all', 'forge');
         assert.deepStrictEqual(result, []);
+    });
+
+    test('gracefully handles hallucinated keys and malformed JSON', () => {
+        const malformed = '[{"name": "test", "roots": "test", "meaning": "test", "cluster": "test"}, {"id": "not-a-name", "extra_key": "hallucination"}]';
+        const result = parseApiResponse(malformed, 'forge');
+        assert.deepStrictEqual(result, []); // the parser completely fails the strict validation
+    });
+
+    test('parses perfectly formed JSON array for harmonizer', () => {
+        const json = '[{"name": "test", "valid": true, "pronunciations": [{"lang": "en", "phonetic": "test"}], "semanticCheck": "Pass"}]';
+        const result = parseApiResponse(json, 'harmonizer');
+        assert.deepStrictEqual(result, [{"name": "test", "valid": true, "pronunciations": [{"lang": "en", "phonetic": "test"}], "semanticCheck": "Pass"}]);
     });
 });
 
