@@ -19,11 +19,21 @@ function getSystemInstruction() {
     if (appState.mode === 'forge') {
         return `ACT as an Expert Linguist specializing in onomastics, morphological derivation, and phonology.
 Construct names by expertly executing phonotactic blending between the requested linguistic roots, guided by the provided themes.
-Ensure every generated name has strict etymological breakdown, deep semantic resonance, and obeys the morphological rules of the source languages.`;
+Ensure every generated name has strict etymological breakdown, deep semantic resonance, and obeys the morphological rules of the source languages.
+
+CRITICAL CONSTRAINTS:
+1. NEVER hallucinate random syllables; every phoneme must trace back to the requested roots.
+2. NEVER generate phonotactic sequences that are offensive or unspeakable in the target languages.
+3. Think step-by-step through the etymological roots before synthesizing the final name.`;
     } else {
         return `ACT as an Expert Cross-Cultural Linguistic Analyst and Philologist.
 Identify existing, historically attested names that demonstrate strict orthographic compatibility and valid phonotactics across the requested cultures.
-Verify linguistic validity, eliminate false cognates, provide precise IPA pronunciations for each language, and rigorously ensure cross-cultural semantic appropriateness.`;
+Verify linguistic validity, eliminate false cognates, provide precise IPA pronunciations for each language, and rigorously ensure cross-cultural semantic appropriateness.
+
+CRITICAL CONSTRAINTS:
+1. NEVER invent historically unattested names in this mode.
+2. NEVER force false cognates; if a true orthographic or semantic bridge does not exist, do not generate it.
+3. Think step-by-step through the cross-cultural orthographic rules before finalizing a match.`;
     }
 }
 
@@ -46,10 +56,12 @@ function getUserPrompt(count) {
     const safeSurname = sanitizeInput(surname);
     const safeSiblingNames = sanitizeInput(siblingNames);
     const safeFirstNameForMiddle = sanitizeInput(firstNameForMiddle);
+    const safeSessionGeneratedNames = sessionGeneratedNames.map(sanitizeInput);
 
     const context = [];
     if (safeLikedNames.length > 0) context.push(`INSPIRATION: ${safeLikedNames.join(', ')}.`);
-    if (safeUserBlacklist.length > 0) context.push(`BLACKLIST: ${safeUserBlacklist.join(', ')}.`);
+    if (safeUserBlacklist.length > 0) context.push(`CRITICAL BLACKLIST (NEVER GENERATE THESE): ${safeUserBlacklist.join(', ')}.`);
+    if (safeSessionGeneratedNames.length > 0) context.push(`PREVIOUSLY GENERATED (DO NOT REPEAT): ${safeSessionGeneratedNames.join(', ')}.`);
 
     let task = "";
     if (mode === 'forge') {
