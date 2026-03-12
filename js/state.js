@@ -78,6 +78,14 @@ let timeoutHandle = null;
  * @returns {void}
  */
 export function saveState() {
+  /**
+   * Executes the actual synchronous save operation to localStorage.
+   * Copies the global state, deletes transient UI properties to avoid
+   * storing redundant or non-serializable data, and writes to storage.
+   * Resets execution handles once complete.
+   *
+   * @returns {void}
+   */
   const performSave = () => {
     try {
       const stateToSave = { ...appState };
