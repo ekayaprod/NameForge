@@ -6,6 +6,7 @@ import { z } from './validation.js';
  * Parses the raw text response from the API into a JSON array.
  * Attempts to extract JSON from markdown code blocks if direct parsing fails.
  * @param {string} text - The raw text response from the API.
+ * @param {string} mode - The current application mode ('forge' or 'harmonizer').
  * @returns {Array<Object>} The parsed array of generated name objects.
  */
 export function parseApiResponse(text, mode = 'forge') {
@@ -48,8 +49,8 @@ export function parseApiResponse(text, mode = 'forge') {
  * Normalizes characters based on the selected output alphabet.
  * @param {Array<Object>} rawArray - The unvalidated array of objects.
  * @param {string} mode - The current application mode ('forge' or 'harmonizer').
- * @param {Array<string>} userBlacklist - Array of blacklisted substrings.
- * @param {string} outputAlphabet - The selected output alphabet setting.
+ * @param {Array<string>} [userBlacklist=[]] - Array of blacklisted substrings.
+ * @param {string} [outputAlphabet='Default'] - The selected output alphabet setting.
  * @returns {Array<Object>} The validated and processed array of name objects.
  */
 export function processApiResponse(rawArray, mode, userBlacklist = [], outputAlphabet = 'Default') {

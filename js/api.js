@@ -39,8 +39,8 @@ export class GeminiService {
    * Internal helper to fetch with exponential backoff retry logic.
    * @param {string} url - The URL to fetch.
    * @param {object} options - Fetch options.
-   * @param {number} retries - Number of retries remaining (default 3).
-   * @param {number} backoff - Initial backoff in ms (default 1000).
+   * @param {number} [retries=3] - Number of retries remaining (default 3).
+   * @param {number} [backoff=1000] - Initial backoff in ms (default 1000).
    * @returns {Promise<Response>}
    */
   async _fetchWithRetry(url, options, retries = 3, backoff = 1000) {
@@ -74,7 +74,7 @@ export class GeminiService {
    * @param {string} userPrompt - The user's message.
    * @param {string} systemInstructionText - The static system rules.
    * @param {string} contextHash - A hash/string representing the current settings (langs, themes).
-   * @param {object} config - Generation config (temp, etc).
+   * @param {object} [config={}] - Generation config (temp, etc).
    * @param {AbortSignal} signal - For cancellation.
    * @returns {Promise<string>} The generated text response.
    */
@@ -172,7 +172,7 @@ export class GeminiService {
    * @param {string} userPrompt - The user's message.
    * @param {string} systemInstructionText - The static system rules.
    * @param {string} contextHash - A hash/string representing the current settings.
-   * @param {object} config - Generation config.
+   * @param {object} [config={}] - Generation config.
    * @param {AbortSignal} signal - For cancellation.
    * @returns {AsyncGenerator<string>} - A generator yielding text chunks.
    */
