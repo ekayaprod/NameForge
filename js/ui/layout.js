@@ -38,12 +38,18 @@ import {
 function createControlsPanel() {
     const left = el('div','md:col-span-1 bg-[#071425] border border-[#0e2334] rounded-xl p-5 flex flex-col gap-4 h-fit');
 
+    /**
+     * Resets the current generation session by clearing the Gemini API history
+     * and resetting the session's generated names array. Notifies the user via toast.
+     * @returns {void}
+     */
     const onReset = () => {
         geminiService.resetHistory();
         appState.sessionGeneratedNames = [];
         showToast('Session context cleared.');
         updateControls();
     };
+
     const onHistory = () => { updateHistoryModal(); toggleModal(ui.modals.history, true); };
     const onSettings = () => toggleModal(ui.modals.settings, true);
 
