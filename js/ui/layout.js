@@ -50,7 +50,18 @@ function createControlsPanel() {
         updateControls();
     };
 
+    /**
+     * Opens the session history modal to view liked names, blacklisted words, and recent session memory.
+     * Triggers a UI update of the modal's contents before displaying it.
+     * @returns {void}
+     */
     const onHistory = () => { updateHistoryModal(); toggleModal(ui.modals.history, true); };
+
+    /**
+     * Opens the global settings modal, allowing users to configure the API key, model selection,
+     * generation limits, and advanced AI parameters.
+     * @returns {void}
+     */
     const onSettings = () => toggleModal(ui.modals.settings, true);
 
     left.append(createHeader(onReset, onHistory, onSettings));
