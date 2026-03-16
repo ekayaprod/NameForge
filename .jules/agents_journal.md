@@ -5,3 +5,7 @@
 ## 2026-03-05 - 🎛️ Polygraph - [Strict Zod Object Extraction for LLM Outputs]
 **Learning:** Fragile string-parsing logic in a TypeScript/JavaScript service that blindly trusts `JSON.parse` is prone to unpredictable runtime crashes when confronted with LLM hallucinated keys, missing properties, or unexpected structural shifts.
 **Action:** Replaced naked `JSON.parse` logic in `parseApiResponse` with strict Zod Object extraction (`z.array`) to mathematically guarantee the shape of LLM outputs against `FORGE_RUNTIME_SCHEMA` and `HARMONIZER_RUNTIME_SCHEMA`. Verified with malformed-data unit tests that ensure graceful recovery (returning `[]`) instead of throwing unhandled exceptions.
+
+## 2026-03-05 - ✨ Prompt Engineer - [Vague User Constraints]
+**Learning:** Vague terms like "meticulously SYNTHESIZING" and "structurally valid" leave too much room for model interpretation and conversational filler.
+**Action:** Upgraded user prompt payload with strict domain terminology ("phonotactic blending", "rhythmic prosody", "flawless orthographic crossover") and negative constraints against conversational filler, perfectly preserving all interpolation variables.

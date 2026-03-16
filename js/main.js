@@ -65,13 +65,15 @@ function getUserPrompt(count) {
 
     let task = "";
     if (mode === 'forge') {
-       task = `CONSTRUCT ${count} structurally valid, ${safeGender} names by meticulously SYNTHESIZING phonemes from: ${safeSelectedLanguages.join(' + ')}. Incorporate semantic elements from THEMES: ${safeSelectedThemes.join(', ')}. Adhere to STYLE: ${safeSelectedStyle}.`;
-       if (safeSurname) task += ` Optimize rhythmic and phonotactic flow when paired with SURNAME CONTEXT: ${safeSurname}.`;
-       if (safeSiblingNames) task += ` Ensure morphological and thematic consistency with SIBLING CONTEXT: ${safeSiblingNames}.`;
-       if (safeFirstNameForMiddle) task += ` Ensure rhythmic flow when functioning as a middle name for FIRST NAME: ${safeFirstNameForMiddle}.`;
+       task = `CONSTRUCT ${count} structurally valid, ${safeGender} names. EXECUTE strict phonotactic blending using phonemes exclusively derived from: ${safeSelectedLanguages.join(' + ')}. INJECT semantic resonance mapped to THEMES: ${safeSelectedThemes.join(', ')}. ADHERE strictly to the structural and cultural boundaries of STYLE: ${safeSelectedStyle}.
+       CRITICAL: Do not append conversational filler.`;
+       if (safeSurname) task += ` OPTIMIZE rhythmic cadence, syllable weight, and phonotactic flow when paired with SURNAME CONTEXT: ${safeSurname}.`;
+       if (safeSiblingNames) task += ` ALIGN morphological roots and thematic resonance with SIBLING CONTEXT: ${safeSiblingNames}.`;
+       if (safeFirstNameForMiddle) task += ` ENGINEER rhythmic prosody and transition flow when functioning as a middle name for FIRST NAME: ${safeFirstNameForMiddle}.`;
     } else {
        const strictness = harmonizerIsAllLanguages ? "all" : "multiple";
-       task = `IDENTIFY ${count} distinct ${safeGender} names that are strictly orthographically and semantically compatible with ${strictness} of the following linguistic origins: ${safeSelectedLanguages.join(', ')}.`;
+       task = `IDENTIFY ${count} distinct ${safeGender} names demonstrating flawless orthographic crossover and strict phonotactic compatibility across ${strictness} of the following linguistic origins: ${safeSelectedLanguages.join(', ')}.
+       CRITICAL: Output must only contain the mathematically validated, culturally verified names. Do not include unverified edge cases or conversational filler.`;
     }
 
     return `${context.join('\n')}
