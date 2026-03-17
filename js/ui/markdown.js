@@ -83,12 +83,23 @@ export function parseMarkdownToDOM(text) {
         // Unordered Lists
         if (line.trim().startsWith('- ') || line.trim().startsWith('* ')) {
             if (!currentList) {
-                currentList = el('ul', 'list-disc list-inside space-y-1 ml-2');
+                currentList = el('ul', 'flex flex-col gap-2 my-2');
+                currentList.setAttribute('role', 'list');
                 container.append(currentList);
             }
-            const li = el('li');
-            li.textContent = line.trim().substring(2);
-            currentList.append(li);
+            const card = el('li', 'bg-[#0a1a2e] border border-[#1b3146] rounded p-3 hover:bg-[#0e2030] transition-colors shadow-sm flex items-start gap-3');
+            card.setAttribute('role', 'listitem');
+
+            // Icon / Bullet wrapper
+            const iconWrapper = el('div', 'mt-0.5 text-blue-400');
+            iconWrapper.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="m9 12 2 2 4-4"></path></svg>`;
+
+            // Content
+            const content = el('div', 'flex-1 text-gray-200');
+            content.textContent = line.trim().substring(2);
+
+            card.append(iconWrapper, content);
+            currentList.append(card);
             continue;
         }
 

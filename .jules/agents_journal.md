@@ -5,3 +5,7 @@
 ## 2026-03-05 - 🎛️ Polygraph - [Strict Zod Object Extraction for LLM Outputs]
 **Learning:** Fragile string-parsing logic in a TypeScript/JavaScript service that blindly trusts `JSON.parse` is prone to unpredictable runtime crashes when confronted with LLM hallucinated keys, missing properties, or unexpected structural shifts.
 **Action:** Replaced naked `JSON.parse` logic in `parseApiResponse` with strict Zod Object extraction (`z.array`) to mathematically guarantee the shape of LLM outputs against `FORGE_RUNTIME_SCHEMA` and `HARMONIZER_RUNTIME_SCHEMA`. Verified with malformed-data unit tests that ensure graceful recovery (returning `[]`) instead of throwing unhandled exceptions.
+
+## 2026-03-05 - 🎇 Hologram - [Generative UI Polish: Feature Cards for Lists]
+**Learning:** Standard unordered markdown lists (`<ul>` and `<li>`) rendered natively can make AI outputs feel static and disconnected from the design system.
+**Action:** Transformed raw markdown list-parsing in `parseMarkdownToDOM` into rich, interactive feature cards using structured `div` elements mapped directly to the application's existing Tailwind UI design system.
