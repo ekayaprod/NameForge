@@ -174,4 +174,27 @@ describe('GeminiService', () => {
     // Initial + 3 retries = 4 attempts
     assert.strictEqual(attempt, 4);
   });
+
+  it('should gracefully handle malformed JSON in API errors', async () => {
+    const service = new GeminiService();
+
+    global.fetch = mock.fn(async () => {
+      return {
+        ok: false,
+        status: 400,
+        text: async () => '{"error": {"message": 123}, "unrelated": "hallucination"' // malformed json or incorrect type
+      };
+    });
+
+    // Reduce backoff for test speed
+    const originalFetchWithRetry = service._fetchWithRetry;
+    service._fetchWithRetry = function(url, options, retries, backoff) {
+        return originalFetchWithRetry.call(this, url, options, 0, 1);
+    };
+
+    await assert.rejects(
+      async () => await service.generate("Hello", "System", "Hash"),
+      /API Error 400/
+    );
+  });
 });

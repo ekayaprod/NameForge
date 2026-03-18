@@ -50,4 +50,40 @@ describe('GeminiService Stream', () => {
 
         assert.strictEqual(result, "Chunk 1Chunk 2");
     });
+
+    it('should silently ignore malformed and hallucinated JSON chunks without crashing', async () => {
+        const service = new GeminiService();
+        service.configure('key', 'model');
+
+        const mockStream = new ReadableStream({
+            start(controller) {
+                const chunks = [
+                    JSON.stringify({ candidates: [{ content: { parts: [{ text: "Valid Chunk" }] } }] }),
+                    '{"candidates": [{"content": {"parts": [{"text": 123}]}}]}', // Hallucinated type / malformed, but valid json so parser gets it
+                    JSON.stringify({ some_other_key: "Hallucination" }), // Not matching schema
+                    JSON.stringify({ candidates: [{ content: { parts: [{ text: "Another Valid Chunk" }] } }] })
+                ];
+
+                const encoder = new TextEncoder();
+                chunks.forEach(chunk => controller.enqueue(encoder.encode(chunk)));
+                controller.close();
+            }
+        });
+
+        const mockFetch = mock.fn(async () => {
+            return {
+                ok: true,
+                body: mockStream
+            };
+        });
+        global.fetch = mockFetch;
+
+        const stream = service.streamGenerate("prompt", "system", "hash");
+        let result = "";
+        for await (const chunk of stream) {
+            result += chunk;
+        }
+
+        assert.strictEqual(result, "Valid ChunkAnother Valid Chunk");
+    });
 });
