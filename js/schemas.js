@@ -69,3 +69,25 @@ export const HARMONIZER_RUNTIME_SCHEMA = z.object({
   })),
   semanticCheck: z.string()
 });
+
+/**
+ * Runtime schema for validating Gemini API error responses.
+ */
+export const API_ERROR_SCHEMA = z.object({
+  error: z.object({
+    message: z.string().optional()
+  }).optional()
+});
+
+/**
+ * Runtime schema for validating Gemini streaming generation chunks.
+ */
+export const STREAM_CHUNK_SCHEMA = z.object({
+  candidates: z.array(z.object({
+    content: z.object({
+      parts: z.array(z.object({
+        text: z.string().optional()
+      })).optional()
+    }).optional()
+  })).optional()
+});

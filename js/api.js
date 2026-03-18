@@ -1,4 +1,5 @@
 import { CONFIG } from './config.js';
+import { API_ERROR_SCHEMA, STREAM_CHUNK_SCHEMA } from './schemas.js';
 
 /**
  * Service for interacting with the Google Gemini API.
@@ -131,9 +132,14 @@ export class GeminiService {
       const errorText = await response.text();
       let errorMsg = `API Error ${response.status}`;
       try {
-          const errJson = JSON.parse(errorText);
-          if (errJson.error?.message) errorMsg = errJson.error.message;
-      } catch(e) {}
+          const rawParsed = JSON.parse(errorText);
+          const validation = API_ERROR_SCHEMA.safeParse(rawParsed);
+          if (validation.success && validation.data.error?.message) {
+              errorMsg = validation.data.error.message;
+          }
+      } catch(e) {
+          // Fallback to default errorMsg
+      }
       throw new Error(errorMsg);
     }
 
@@ -226,9 +232,14 @@ export class GeminiService {
         const errorText = await response.text();
         let errorMsg = `API Error ${response.status}`;
         try {
-            const errJson = JSON.parse(errorText);
-            if (errJson.error?.message) errorMsg = errJson.error.message;
-        } catch(e) {}
+            const rawParsed = JSON.parse(errorText);
+            const validation = API_ERROR_SCHEMA.safeParse(rawParsed);
+            if (validation.success && validation.data.error?.message) {
+                errorMsg = validation.data.error.message;
+            }
+        } catch(e) {
+            // Fallback to default errorMsg
+        }
         throw new Error(errorMsg);
     }
 
@@ -278,11 +289,15 @@ export class GeminiService {
                     if (bracketCount === 0 && start !== -1) {
                         const jsonStr = buffer.substring(start, i + 1);
                         try {
-                            const data = JSON.parse(jsonStr);
-                            const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
-                            if (text) {
-                                fullText += text;
-                                yield text;
+                            const rawParsed = JSON.parse(jsonStr);
+                            const validation = STREAM_CHUNK_SCHEMA.safeParse(rawParsed);
+
+                            if (validation.success) {
+                                const text = validation.data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+                                if (text) {
+                                    fullText += text;
+                                    yield text;
+                                }
                             }
 
                             buffer = buffer.substring(i + 1);

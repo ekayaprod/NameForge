@@ -9,3 +9,7 @@
 ## 2026-03-05 - ✨ Prompt Engineer - [Vague User Constraints]
 **Learning:** Vague terms like "meticulously SYNTHESIZING" and "structurally valid" leave too much room for model interpretation and conversational filler.
 **Action:** Upgraded user prompt payload with strict domain terminology ("phonotactic blending", "rhythmic prosody", "flawless orthographic crossover") and negative constraints against conversational filler, perfectly preserving all interpolation variables.
+
+## 2026-03-18 - 🎛️ Polygraph - [Strict Zod Parsing on Gemini Streams]
+**Learning:** API error responses and streaming chunk components can return malformed JSON or unexpected internal types which crash `JSON.parse()`. Relying on unchecked keys (like `data.candidates?.[0]?.content?.parts?.[0]?.text`) after string parsing can crash deeply.
+**Action:** Replaced naked `JSON.parse` logic within API error handlers and chunk processing with `STREAM_CHUNK_SCHEMA` and `API_ERROR_SCHEMA` using `.safeParse()` to gracefully discard hallucinatory, badly-typed chunks. Added simulation tests that assault the chunk reader with malformed JSON strings.
