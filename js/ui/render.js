@@ -43,7 +43,15 @@ export function toggleModal(modal, show) {
 /**
  * Appends a generated name result into the UI results panel.
  * Groups generated names into thematic clusters in Forge mode.
- * @param {Object} item - The validated name object to render and append.
+ * @param {{
+ *   name: string,
+ *   cluster?: string,
+ *   valid?: boolean,
+ *   semanticCheck?: string,
+ *   pronunciations?: Array<{lang: string, phonetic: string}>,
+ *   meaning?: string,
+ *   roots?: string
+ * }} item - The validated name object to render and append.
  * @returns {void}
  */
 function appendResult(item) {
@@ -181,6 +189,7 @@ export function updateControls() {
 /**
  * Synchronizes the visual state and interactivity of the generate button.
  * Disables the button if validation requirements (languages and themes) aren't met or if currently loading.
+ * @returns {void}
  */
 function updateGenerateButtonState() {
     const langRequirement = appState.selectedLanguages.length >= 2 && appState.selectedLanguages.length <= 3;
