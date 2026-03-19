@@ -1,5 +1,6 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert';
+import { appState } from '../js/state.js';
 import { extractJsonObjects } from '../js/utils.js';
 import { parseApiResponse, processApiResponse } from '../js/parser.js';
 
@@ -71,6 +72,15 @@ describe('parseApiResponse', () => {
         const json = '[{"name": "test", "valid": true, "pronunciations": [{"lang": "en", "phonetic": "test"}], "semanticCheck": "Pass"}]';
         const result = parseApiResponse(json, 'harmonizer');
         assert.deepStrictEqual(result, [{"name": "test", "valid": true, "pronunciations": [{"lang": "en", "phonetic": "test"}], "semanticCheck": "Pass"}]);
+    });
+
+    test('triggers exception fallback when markdown content is invalid JSON', () => {
+        appState.recentErrors = [];
+        const invalidJsonInMarkdown = "```json\n[{\"name\": \"test\", \"broken\": }\n```";
+        const result = parseApiResponse(invalidJsonInMarkdown, 'forge');
+
+        assert.deepStrictEqual(result, []);
+        assert.ok(appState.recentErrors.some(err => err.includes("Failed to parse API response")));
     });
 });
 
