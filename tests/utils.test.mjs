@@ -85,4 +85,16 @@ describe('extractJsonObjects', () => {
         text += ', {"name": "B"}';
         assert.deepStrictEqual(extractJsonObjects(text), [{name: "A"}, {name: "B"}]);
     });
+
+    test('supports incremental parsing with startIndex', () => {
+        const text = '{"name": "A"} {"name": "B"}';
+        // When using returnIndex=true, we expect EXACTLY what was found since startIndex
+        const { results, lastIndex } = extractJsonObjects(text, 0, true);
+        assert.deepStrictEqual(results, [{name: "A"}, {name: "B"}]);
+        assert.strictEqual(lastIndex, 27);
+
+        const { results: results2, lastIndex: lastIndex2 } = extractJsonObjects(text, 13, true);
+        assert.deepStrictEqual(results2, [{name: "B"}]);
+        assert.strictEqual(lastIndex2, 27);
+    });
 });

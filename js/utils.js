@@ -32,16 +32,19 @@ export const debounce = (func, delay) => {
  * Robustly handles prefixes like `[` and delimiters like `,`.
  *
  * @param {string} text - The accumulated text which contains a JSON array.
- * @returns {Array<Object>} - An array of parsed objects found in the text.
+ * @param {number} [startIndex=0] - The index to start searching from.
+ * @param {boolean} [returnIndex=false] - Whether to return the last processed index.
+ * @returns {Array<Object>|{results: Array<Object>, lastIndex: number}} - Parsed objects.
  */
-export function extractJsonObjects(text) {
+export function extractJsonObjects(text, startIndex = 0, returnIndex = false) {
     const results = [];
     let bracketCount = 0;
     let start = -1;
     let inString = false;
     let escape = false;
+    let lastIndex = startIndex;
 
-    for (let i = 0; i < text.length; i++) {
+    for (let i = startIndex; i < text.length; i++) {
         const char = text[i];
 
         if (escape) {
@@ -75,8 +78,13 @@ export function extractJsonObjects(text) {
                     // Ignore invalid JSON
                 }
                 start = -1;
+                lastIndex = i + 1;
             }
         }
+    }
+
+    if (returnIndex) {
+        return { results, lastIndex };
     }
     return results;
 }
