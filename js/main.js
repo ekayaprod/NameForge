@@ -142,18 +142,22 @@ async function doGenerate() {
         }, appState.generationController.signal);
 
         let accumulatedText = "";
+        let lastProcessedIndex = 0;
 
         for await (const chunk of stream) {
             try {
                 accumulatedText += chunk;
                 appState.rawApiResponse = accumulatedText;
 
-                const partialObjects = extractJsonObjects(accumulatedText);
-                const processed = processApiResponse(partialObjects, appState.mode, appState.userBlacklist, appState.outputAlphabet);
+                const { results: newObjects, lastIndex } = extractJsonObjects(accumulatedText, lastProcessedIndex, true);
 
-                if (processed.length > appState.results.length) {
-                    appState.results = processed;
-                    updateResultsPanel();
+                if (newObjects.length > 0) {
+                    lastProcessedIndex = lastIndex;
+                    const processed = processApiResponse(newObjects, appState.mode, appState.userBlacklist, appState.outputAlphabet);
+                    if (processed.length > 0) {
+                        appState.results.push(...processed);
+                        updateResultsPanel();
+                    }
                 }
             } catch (e) {
                 console.error("Error in stream loop:", e);
