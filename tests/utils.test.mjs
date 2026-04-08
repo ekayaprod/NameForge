@@ -85,4 +85,20 @@ describe('extractJsonObjects', () => {
         text += ', {"name": "B"}';
         assert.deepStrictEqual(extractJsonObjects(text), [{name: "A"}, {name: "B"}]);
     });
+
+    test('returns the correct lastIndex when returnIndex is true', () => {
+        const text = '[{"name": "A"}, {"name": "B"}] , {"name": "C';
+        const { results, lastIndex } = extractJsonObjects(text, true);
+
+        assert.deepStrictEqual(results, [{name: "A"}, {name: "B"}]);
+        // The last consumed character is the '}' of the second object.
+        // '[{"name": "A"}, {"name": "B"}]' -> length is 30
+        // Wait, the utility extracts objects { ... }, so it should find {"name": "A"} and {"name": "B"}
+        // let's trace:
+        // [ { " n a m e " :   " A " } ,   { " n a m e " :   " B " } ]   ,   { " n a m e " :   " C
+        // 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+        //                     ^13                 ^28
+        // So results should have two objects, and lastIndex should be 29 (index after the '}' of the second object).
+        assert.strictEqual(lastIndex, 29);
+    });
 });

@@ -1,5 +1,6 @@
 import { CONFIG } from './config.js';
 import { API_ERROR_SCHEMA, STREAM_CHUNK_SCHEMA } from './schemas.js';
+import { extractJsonObjects } from './utils.js';
 
 /**
  * Service for interacting with the Google Gemini API.
@@ -256,58 +257,22 @@ export class GeminiService {
             buffer += decoder.decode(value, { stream: true });
 
             // Process the buffer for complete JSON objects
-            let bracketCount = 0;
-            let start = -1;
-            let inString = false;
-            let escape = false;
+            const { results, lastIndex } = extractJsonObjects(buffer, true);
 
-            for (let i = 0; i < buffer.length; i++) {
-                const char = buffer[i];
+            for (const rawParsed of results) {
+                const validation = STREAM_CHUNK_SCHEMA.safeParse(rawParsed);
 
-                if (escape) {
-                    escape = false;
-                    continue;
-                }
-
-                if (char === '\\') {
-                    escape = true;
-                    continue;
-                }
-
-                if (char === '"') {
-                    inString = !inString;
-                    continue;
-                }
-
-                if (inString) continue;
-
-                if (char === '{') {
-                    if (bracketCount === 0) start = i;
-                    bracketCount++;
-                } else if (char === '}') {
-                    bracketCount--;
-                    if (bracketCount === 0 && start !== -1) {
-                        const jsonStr = buffer.substring(start, i + 1);
-                        try {
-                            const rawParsed = JSON.parse(jsonStr);
-                            const validation = STREAM_CHUNK_SCHEMA.safeParse(rawParsed);
-
-                            if (validation.success) {
-                                const text = validation.data.candidates?.[0]?.content?.parts?.[0]?.text || "";
-                                if (text) {
-                                    fullText += text;
-                                    yield text;
-                                }
-                            }
-
-                            buffer = buffer.substring(i + 1);
-                            i = -1;
-                            start = -1;
-                        } catch (e) {
-                           // Partial or invalid JSON
-                        }
+                if (validation.success) {
+                    const text = validation.data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+                    if (text) {
+                        fullText += text;
+                        yield text;
                     }
                 }
+            }
+
+            if (lastIndex > 0) {
+                buffer = buffer.substring(lastIndex);
             }
         }
     } finally {
