@@ -1,46 +1,5 @@
-import { logError } from './state.js';
 import { FORGE_RUNTIME_SCHEMA, HARMONIZER_RUNTIME_SCHEMA } from './schemas.js';
 import { z } from './validation.js';
-
-/**
- * Parses the raw text response from the API into a JSON array.
- * Attempts to extract JSON from markdown code blocks if direct parsing fails.
- * @param {string} text - The raw text response from the API.
- * @returns {Array<Object>} The parsed array of generated name objects.
- */
-export function parseApiResponse(text, mode = 'forge') {
-    if (!text) return [];
-    const schema = z.array(mode === 'forge' ? FORGE_RUNTIME_SCHEMA : HARMONIZER_RUNTIME_SCHEMA);
-
-    try {
-      const parsed = JSON.parse(text);
-      return schema.parse(parsed);
-    } catch (e) {
-      console.warn("Direct JSON parse failed, attempting cleanup:", e);
-      let cleanedText = text;
-      if (text.includes('```')) {
-          const startIdx = text.indexOf('```');
-          const lastIdx = text.lastIndexOf('```');
-          if (startIdx !== lastIdx && lastIdx > startIdx) {
-              const firstNewline = text.indexOf('\n', startIdx);
-              const contentStart = (firstNewline !== -1 && firstNewline < lastIdx) ? firstNewline + 1 : startIdx + 3;
-              cleanedText = text.substring(contentStart, lastIdx);
-          } else {
-              cleanedText = text.replace(/```[a-z]*\n?/gi, '').replace(/```/g, '');
-          }
-      }
-      cleanedText = cleanedText.trim();
-      try {
-          const parsed = JSON.parse(cleanedText);
-          return schema.parse(parsed);
-      } catch(e2) {
-          console.warn("Cleanup parse failed:", e2);
-      }
-
-      logError("Failed to parse API response");
-      return [];
-    }
-}
 
 /**
  * Processes and validates the raw array of objects returned from the API.
