@@ -21,6 +21,36 @@ test('sanitizeInput should limit length', () => {
     assert.strictEqual(output.length, 500);
 });
 
+test('sanitizeInput should return empty string for non-string inputs', () => {
+    assert.strictEqual(sanitizeInput(null), '');
+    assert.strictEqual(sanitizeInput(undefined), '');
+    assert.strictEqual(sanitizeInput(123), '');
+    assert.strictEqual(sanitizeInput({}), '');
+    assert.strictEqual(sanitizeInput([]), '');
+    assert.strictEqual(sanitizeInput(true), '');
+});
+
+test('sanitizeInput should return empty string for empty input', () => {
+    assert.strictEqual(sanitizeInput(''), '');
+});
+
+test('sanitizeInput length boundary conditions', () => {
+    const underLimit = 'a'.repeat(499);
+    assert.strictEqual(sanitizeInput(underLimit).length, 499);
+
+    const atLimit = 'a'.repeat(500);
+    assert.strictEqual(sanitizeInput(atLimit).length, 500);
+
+    const overLimit = 'a'.repeat(501);
+    assert.strictEqual(sanitizeInput(overLimit).length, 500);
+});
+
+test('sanitizeInput should strip various control characters', () => {
+    const input = 'A\x01B\x1FC\x7FD';
+    const expected = 'ABCD';
+    assert.strictEqual(sanitizeInput(input), expected);
+});
+
 test('FORGE_RUNTIME_SCHEMA should validate correct object', () => {
     const valid = {
         name: "Test",
