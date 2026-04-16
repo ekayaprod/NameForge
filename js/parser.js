@@ -27,7 +27,9 @@ export function processApiResponse(rawArray, mode, userBlacklist = [], outputAlp
       const validItem = validation.data;
 
       let name = (validItem.name || "").toString().trim();
-      if (!name || fullBlacklist.some(b => name.toLowerCase().includes(b))) return null;
+      if (!name) return null;
+      const lowerName = name.toLowerCase();
+      if (fullBlacklist.some(b => lowerName.includes(b))) return null;
       if (outputAlphabet === 'English (Simplified/No Accents)') {
         name = name.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
       }
