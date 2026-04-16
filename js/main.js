@@ -6,7 +6,7 @@ import { CONFIG } from './config.js';
 import { FORGE_SCHEMA, HARMONIZER_SCHEMA } from './schemas.js';
 import { extractJsonObjects } from './utils.js';
 import { sanitizeInput } from './security.js';
-import { parseApiResponse, processApiResponse } from './parser.js';
+import { processApiResponse } from './parser.js';
 
 // --- Helpers ---
 
