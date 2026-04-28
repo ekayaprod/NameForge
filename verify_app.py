@@ -41,9 +41,9 @@ def run(playwright):
         print("Gemini 2.0 Flash NOT found")
 
     # Take screenshot of settings
-    if not os.path.exists("/home/jules/verification"):
-        os.makedirs("/home/jules/verification")
-    page.screenshot(path="/home/jules/verification/settings.png")
+    if not os.path.exists("verification"):
+        os.makedirs("verification")
+    page.screenshot(path="verification/settings.png")
 
     # Close settings
     page.click("text=Close")
@@ -66,7 +66,7 @@ def run(playwright):
 
     # Verify History Modal
     page.click("text=History")
-    page.screenshot(path="/home/jules/verification/history.png")
+    page.screenshot(path="verification/history.png")
 
     browser.close()
 

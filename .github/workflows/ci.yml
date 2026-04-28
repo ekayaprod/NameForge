@@ -1,0 +1,50 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Use Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20' # LTS
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+
+    - name: Install Python dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install playwright
+        playwright install chromium
+
+    - name: Run Node.js Tests
+      run: bash verify_tests.sh
+
+    - name: Start App Server
+      run: python3 -m http.server 8000 &
+
+    - name: Wait for Server
+      run: sleep 3
+
+    - name: Run Python Playwright App Verification
+      run: python3 verify_app.py
+
+    - name: Run Python Playwright CSP Verification
+      run: python3 verify_csp.py
+
+    - name: Run Python Playwright SRI Verification
+      run: python3 verify_sri.py
