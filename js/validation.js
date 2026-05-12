@@ -113,6 +113,7 @@ class ZodObject extends ZodType {
   constructor(shape) {
     super();
     this.shape = shape;
+    this._keys = Object.keys(shape);
   }
 
   /**
@@ -126,7 +127,9 @@ class ZodObject extends ZodType {
         throw new Error(`Expected object, received ${val === null ? 'null' : typeof val}`);
     }
     const result = {};
-    for (const key in this.shape) {
+    const keys = this._keys;
+    for (let i = 0; i < keys.length; i++) {
+      const key = keys[i];
       try {
           const parsed = this.shape[key].parse(val[key]);
           if (parsed !== undefined) {
