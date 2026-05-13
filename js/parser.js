@@ -20,7 +20,6 @@ export function processApiResponse(rawArray, mode, userBlacklist = [], outputAlp
       const validation = schema.safeParse(it);
 
       if (!validation.success) {
-          console.warn("Schema validation failed for item:", it, validation.error);
           return null;
       }
 
