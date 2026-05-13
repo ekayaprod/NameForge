@@ -1,6 +1,42 @@
-import { test, describe } from 'node:test';
+import { test, describe, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert';
-import { debounce, extractJsonObjects } from '../js/utils.js';
+import { el, debounce, extractJsonObjects } from '../js/utils.js';
+
+describe('el', () => {
+    let originalDocument;
+
+    beforeEach(() => {
+        originalDocument = global.document;
+        global.document = {
+            createElement: (tag) => ({
+                tagName: tag.toUpperCase(),
+                className: ''
+            })
+        };
+    });
+
+    afterEach(() => {
+        global.document = originalDocument;
+    });
+
+    test('creates an element with the correct tag', () => {
+        const div = el('div');
+        assert.strictEqual(div.tagName, 'DIV');
+        assert.strictEqual(div.className, '');
+    });
+
+    test('creates an element with a class name', () => {
+        const span = el('span', 'foo');
+        assert.strictEqual(span.tagName, 'SPAN');
+        assert.strictEqual(span.className, 'foo');
+    });
+
+    test('handles empty class name', () => {
+        const p = el('p', '');
+        assert.strictEqual(p.tagName, 'P');
+        assert.strictEqual(p.className, '');
+    });
+});
 
 describe('debounce', (t) => {
     test('executes after the specified delay', (t) => {
